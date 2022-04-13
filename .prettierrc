@@ -1,0 +1,14 @@
+{
+  "tabWidth": 4,
+  "htmlWhitespaceSensitivity": "ignore",
+  "arrowParens": "avoid",
+  "trailingComma": "none",
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "tabWidth": 2
+      }
+    }
+  ]
+}

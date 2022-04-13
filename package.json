@@ -1,0 +1,29 @@
+{
+    "name": "trenitalia-test",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "dev": "nodemon",
+        "build": "rimraf ./build && tsc",
+        "minify": "uglifyjs --compress --mangle --output build/index.min.js -- build/index.js",
+        "start": "npm run build && node build/index.js"
+    },
+    "author": "Bitrey",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/express": "^4.17.13",
+        "@types/node": "^17.0.23",
+        "nodemon": "^2.0.15",
+        "rimraf": "^3.0.2",
+        "ts-node": "^10.7.0",
+        "typescript": "^4.6.3"
+    },
+    "dependencies": {
+        "axios": "^0.26.1",
+        "express": "^4.17.3",
+        "moment": "^2.29.2",
+        "winston": "^3.7.2"
+    }
+}

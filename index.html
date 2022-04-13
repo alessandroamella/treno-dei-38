@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="/css/autocompleteBS.css" />
+    <style>
+      html {
+        scroll-behavior: smooth;
+      }
+
+      .bus-iframe {
+        width: 100%;
+        height: 100vh;
+        max-height: 100%;
+      }
+    </style>
+    <title>SETA al rogo</title>
+  </head>
+  <body>
+    <div class="modal stazione-modal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Trova stazione</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="seleziona-stazione">
+              <div class="mb-3" style="position: relative">
+                <label for="nome-stazione" class="form-label">
+                  Nome stazione
+                </label>
+                <input
+                  type="text"
+                  class="form-control nome-stazione"
+                  placeholder="San Ces ah no"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal main-modal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title main-modal-title"></h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body main-modal-body"></div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="py-3 container">
+      <h1>SETA</h1>
+      <p>Speriamo che fallisca</p>
+
+      <div class="row">
+        <div
+          class="col-12 col-lg-4 card"
+          style="max-height: 77vh; overflow-y: auto"
+        >
+          <!-- <img src="..." class="card-img-top" alt="..." /> -->
+          <div class="card-body">
+            <div class="card-title sticky-top">
+              <div class="input-group mb-3">
+                <span class="input-group-text" id="numero-treno-span">
+                  Treno
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Numero treno"
+                  aria-label="Numero treno"
+                  id="numero-treno"
+                  aria-describedby="numero-treno-span"
+                  value="2463"
+                  pattern="[a-zA-Z0-9]+"
+                />
+              </div>
+            </div>
+            <div>
+              <div id="treno-info" style="display: none">
+                <p class="card-text m-0">
+                  Treno:
+                  <span id="treno" style="font-weight: 600"></span>
+                </p>
+                <p class="card-text m-0">
+                  Ritardo:
+                  <span id="ritardo" style="font-weight: 600"></span>
+                </p>
+                <p class="card-text">
+                  Ultimo rilevamento:
+                  <span
+                    id="ora-ultimo-rilevamento"
+                    style="font-weight: 600"
+                  ></span>
+                  a
+                  <span
+                    id="stazione-ultimo-rilevamento"
+                    style="font-weight: 600"
+                  ></span>
+                </p>
+              </div>
+
+              <div id="treno-loading" class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+
+            <ul class="list-group mt-2" id="fermate"></ul>
+
+            <nav aria-label="breadcrumb">
+              <ol class="breadcrumb" id="fermate"></ol>
+            </nav>
+          </div>
+          <!-- <p class="card-text">
+                            <small class="text-muted">
+                                Last updated 3 mins ago
+                            </small>
+                        </p> -->
+        </div>
+        <div
+          class="col-12 col-lg-4 card"
+          style="max-height: 77vh; overflow-y: auto"
+        >
+          <!-- <img src="..." class="card-img-top" alt="..." /> -->
+          <div class="card-body">
+            <div class="card-title sticky-top">
+              <div class="input-group mb-3">
+                <span class="input-group-text" id="fermata-bus-span">
+                  Corsia 1
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Codice fermata SETA"
+                  aria-label="Codice fermata SETA"
+                  id="fermata-bus-1"
+                  aria-describedby="fermata-bus-span"
+                  value="MO6133"
+                  pattern="[a-zA-Z0-9]+"
+                />
+              </div>
+            </div>
+            <div
+              class="card"
+              style="width: 100%"
+              style="display: none"
+              id="bus-corse-card-1"
+            >
+              <ul id="bus-corse-1" class="list-group list-group-flush"></ul>
+            </div>
+
+            <div id="bus-loading-1" class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+        <div
+          class="col-12 col-lg-4 card"
+          style="max-height: 77vh; overflow-y: auto"
+        >
+          <!-- <img src="..." class="card-img-top" alt="..." /> -->
+          <div class="card-body">
+            <div class="card-title sticky-top">
+              <div class="input-group mb-3">
+                <span class="input-group-text" id="fermata-bus-span">
+                  Corsia samu
+                </span>
+                <input
+                  type="text"
+                  class="form-control"
+                  placeholder="Codice fermata SETA"
+                  aria-label="Codice fermata SETA"
+                  id="fermata-bus-2"
+                  aria-describedby="fermata-bus-span"
+                  value="MO6134"
+                  pattern="[a-zA-Z0-9]+"
+                />
+              </div>
+            </div>
+            <div
+              class="card"
+              style="width: 100%"
+              style="display: none"
+              id="bus-corse-card-2"
+            >
+              <ul id="bus-corse-2" class="list-group list-group-flush"></ul>
+            </div>
+
+            <div id="bus-loading-2" class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-3">
+        <h1>Funzioni veloci</h1>
+
+        <div>
+          <button
+            onclick="stazioneModal.show()"
+            type="button"
+            class="btn btn-primary"
+          >
+            Tabellone
+          </button>
+          <button onclick="sanCesario()" type="button" class="btn btn-primary">
+            San Cesario
+          </button>
+          <button
+            onclick="treno(17413)"
+            type="button"
+            class="btn btn-secondary"
+          >
+            Treno 12:38
+          </button>
+          <button onclick="treno(2463)" type="button" class="btn btn-secondary">
+            Treno 13:38
+          </button>
+          <button
+            onclick="treno(17415)"
+            type="button"
+            class="btn btn-secondary"
+          >
+            Treno 14:38
+          </button>
+          <button
+            onclick="treno(17417)"
+            type="button"
+            class="btn btn-secondary"
+          >
+            Treno 16:38
+          </button>
+          <button onclick="bus(1, 'MO491')" type="button" class="btn btn-info">
+            Castelfranco FS
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <li class="list-group-item bus-card" style="display: none">
+      <img
+        src="http://tpldisplay.bitrey.it/img/seta.png"
+        alt="SETA logo"
+        style="object-fit: contain; max-width: 1rem"
+        loading="lazy"
+      />
+      <span style="font-weight: 600" class="bus-linea">5</span>
+      <span class="bus-destinazione">D'Avia</span>
+      <span style="float: right" class="bus-temporeale">
+        <img
+          src="http://tpldisplay.bitrey.it/img/realtime.gif"
+          alt="Realtime"
+          loading="lazy"
+          style="
+            width: 1rem;
+            height: 1rem;
+            padding: 0;
+            transform: rotate(45deg);
+          "
+        />
+      </span>
+      <span class="bus-arrivo" style="float: right; font-weight: 600">5m</span>
+    </li>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.26.1/axios.min.js"
+      integrity="sha512-bPh3uwgU5qEMipS/VOmRqynnMXGGSRv+72H/N260MQeXZIK4PG48401Bsby9Nq5P5fz7hy5UGNmC/W1Z51h2GQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/1.30.1/date_fns.min.js"
+      integrity="sha512-F+u8eWHrfY8Xw9BLzZ8rG/0wIvs0y+JyRJrXjp3VjtFPylAEEGwKbua5Ip/oiVhaTDaDs4eU2Xtsxjs/9ag2bQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/js/autocompleteBS.js"></script>
+    <script src="/js/index.js"></script>
+  </body>
+</html>

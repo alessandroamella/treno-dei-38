@@ -1,0 +1,37 @@
+export default interface Fermata {
+    orientamento: any;
+    kcNumTreno: any;
+    stazione: string;
+    id: string;
+    listaCorrispondenze: any;
+    programmata: number;
+    programmataZero: any;
+    effettiva: number;
+    ritardo: number;
+    partenzaTeoricaZero: any;
+    arrivoTeoricoZero: any;
+    partenza_teorica: number;
+    arrivo_teorico: any;
+    isNextChanged: boolean;
+    partenzaReale: number;
+    arrivoReale: any;
+    ritardoPartenza: number;
+    ritardoArrivo: number;
+    progressivo: number;
+    binarioEffettivoArrivoCodice: any;
+    binarioEffettivoArrivoTipo: any;
+    binarioEffettivoArrivoDescrizione: any;
+    binarioProgrammatoArrivoCodice: any;
+    binarioProgrammatoArrivoDescrizione: any;
+    binarioEffettivoPartenzaCodice: any;
+    binarioEffettivoPartenzaTipo: any;
+    binarioEffettivoPartenzaDescrizione: any;
+    binarioProgrammatoPartenzaCodice: any;
+    binarioProgrammatoPartenzaDescrizione: string;
+    tipoFermata: string;
+    visualizzaPrevista: boolean;
+    nextChanged: boolean;
+    nextTrattaType: number;
+    actualFermataType: number;
+    materiale_label: any;
+}
