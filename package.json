@@ -7,7 +7,6 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "nodemon",
         "build": "rimraf ./build && tsc",
-        "minify": "uglifyjs --compress --mangle --output build/index.min.js -- build/index.js",
         "start": "npm run build && node build/index.js"
     },
     "author": "Bitrey",
