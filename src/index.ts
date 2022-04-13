@@ -60,6 +60,7 @@ app.all("*", (req, res) => {
     res.redirect("/");
 });
 
-app.listen(process.env.PORT || 3000, () => {
-    logger.info("Server started");
+const PORT = Number(process.env.PORT) || 3000;
+app.listen(PORT, () => {
+    logger.info("Server started on port " + PORT);
 });
