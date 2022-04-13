@@ -1,8 +1,11 @@
 import express from "express";
 import path from "path";
+import dotenv from "dotenv";
 import { logger } from "./logger";
 import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
+
+dotenv.config();
 
 const app = express();
 
