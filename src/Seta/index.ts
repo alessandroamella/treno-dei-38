@@ -16,9 +16,18 @@ class Seta {
             ).data;
         } catch (err) {
             if (axios.isAxiosError(err)) {
+                // no arrivals scheduled in the next 90 minutes
+                if (isRawError(err?.response?.data)) {
+                    logger.debug("SETA no arrivals in the next 90 minutes");
+                    return [];
+                }
+
+                logger.warn("SETA request Axios error");
                 logger.warn(err?.response?.data || err);
+            } else {
+                logger.error("SETA request error");
+                logger.error(err);
             }
-            logger.error(err);
             return null;
         }
 
@@ -27,7 +36,7 @@ class Seta {
             return null;
         } else if (isRawError(data)) {
             logger.info("SETA raw error for stop " + stopId);
-            return null;
+            return [];
         }
 
         const corse: Corsa[] = data.arrival.services.map(s => ({

@@ -94,7 +94,10 @@ class Trenitalia {
             );
 
             return (data as StatoTreno[])
-                .map(e => Trenitalia.formattaOutput(e))
+                .map(e => ({
+                    ...Trenitalia.formattaOutput(e),
+                    orarioArrivo: e.compOrarioPartenza
+                }))
                 .map(({ origine, ...rest }) => rest)
                 .filter(e => e.treno.toLowerCase().includes("reg"));
         } catch (err) {

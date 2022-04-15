@@ -28,6 +28,9 @@ async function treno(numTreno) {
         document.getElementById("treno-info").style.display = "block";
         document.getElementById("treno-loading").style.display = "none";
         document.getElementById("fermate").style.display = "block";
+        if (err.response?.status === 400) {
+            return alert(`Treno "${numTrenoValue}" non valido`);
+        }
         return alert(err.response?.data || "Errore sconosciuto");
     }
 
@@ -44,12 +47,12 @@ async function treno(numTreno) {
     document.getElementById("treno").textContent = treno;
 
     document.getElementById("ritardo").textContent = `${
-        ritardo > 0 ? "+" + ritardo : ritardo
+        ritardo >= 0 ? "+" + ritardo : ritardo
     } minut${ritardo === 1 ? "o" : "i"}`;
 
     document.getElementById("ora-ultimo-rilevamento").textContent =
         oraUltimoRilevamento
-            ? dateFns.format(new Date(oraUltimoRilevamento), "HH:mm")
+            ? _formattaData(oraUltimoRilevamento)
             : "non so quando";
 
     document.getElementById("stazione-ultimo-rilevamento").textContent =
@@ -61,7 +64,31 @@ async function treno(numTreno) {
     for (const f of fermate) {
         const li = document.createElement("li");
         li.classList.add("list-group-item");
-        li.textContent = f.stazione;
+
+        const p = document.createElement("p");
+        p.textContent = f.stazione;
+        p.classList.add("m-0");
+
+        const span = document.createElement("span");
+        span.textContent = _formattaData(f.dataEffettiva || f.dataProgrammata);
+        span.style.float = "right";
+        p.appendChild(span);
+
+        if (
+            f.dataEffettiva &&
+            _formattaData(f.dataProgrammata) !== _formattaData(f.dataEffettiva)
+        ) {
+            const span = document.createElement("span");
+            span.textContent = _formattaData(f.dataProgrammata);
+            span.style.float = "right";
+            span.style.textDecoration = "line-through";
+            span.style.fontWeight = 400;
+            span.style.marginRight = "0.25rem";
+            p.appendChild(span);
+        }
+
+        li.appendChild(p);
+
         if (f.transitato) {
             li.style.fontWeight = 600;
             li.style.backgroundColor = "#e9f5df";
@@ -73,6 +100,12 @@ async function treno(numTreno) {
     document.getElementById("fermate").style.display = "block";
     document.getElementById("treno-loading").style.display = "none";
     document.getElementById("numero-treno").value = numTrenoValue;
+
+    document.getElementById("treno-ultimo-aggiornamento").style.display =
+        "block";
+    document.getElementById("treno-update").textContent = _formattaData(
+        new Date()
+    );
 
     _refresh();
 }
@@ -147,6 +180,7 @@ async function bus(cardNum = 1, fermata) {
             (!c.arrivoTempoReale ? "*" : "");
 
         card.dataset.bsToggle = "tooltip";
+        card.dataset.bsTrigger = "hover";
         card.dataset.bsHtml = true;
         card.title = "";
 
@@ -184,10 +218,22 @@ async function bus(cardNum = 1, fermata) {
         corseElem.appendChild(card);
     }
 
+    if (data.length === 0) {
+        const p = document.createElement("p");
+        p.textContent = "Nessuna corsa nei prossimi 90 minuti";
+        p.classList.add("py-2");
+        p.classList.add("mb-0");
+        p.style.textAlign = "center";
+        corseElem.appendChild(p);
+    }
+
     document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
     document.getElementById(`bus-corse-card-${cardNum}`).style.display =
         "block";
     document.getElementById(`fermata-bus-${cardNum}`).value = fermataValue;
+
+    document.getElementById(`bus-update-${cardNum}`).textContent =
+        _formattaData(new Date());
 
     _refresh();
 }
@@ -241,13 +287,15 @@ async function tabellone(stazione) {
             ${data
                 .map(
                     e => `
-                <li class="list-group-item btn" style="text-align: left;" onClick="trenoModal(${
-                    e.treno.split(" ")[1]
-                });"><strong>${e.treno}</strong> ${
+                    <li class="list-group-item btn" style="text-align: left;" onClick="trenoModal(${
+                        e.treno.split(" ")[1]
+                    });"><strong>${e.treno}</strong> ${
                         e.destinazione
-                    } <span style="float: right;">${e.ritardo > 0 ? "+" : ""}${
+                    } <span class="modal-ritardo">${e.ritardo >= 0 ? "+" : ""}${
                         e.ritardo
-                    }m</span></li>
+                    }m</span>
+                    <span class="float-end">${e.orarioArrivo}</span>
+                    </li>
             `
                 )
                 .join("")}
@@ -264,14 +312,18 @@ function trenoModal(numTreno) {
     document.body.scrollTop = document.documentElement.scrollTop = 0;
 }
 
+function _formattaData(data) {
+    return dateFns.format(new Date(data), "HH:mm");
+}
+
 function _refresh() {
     // Enable tooltips
     const tooltipTriggerList = [].slice.call(
         document.querySelectorAll('[data-bs-toggle="tooltip"]')
     );
-    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    const tooltipList = tooltipTriggerList.map(
+        tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)
+    );
 }
 
 document.getElementById("numero-treno").addEventListener("change", e => {

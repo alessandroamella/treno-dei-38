@@ -16,10 +16,21 @@
         scroll-behavior: smooth;
       }
 
+      * {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
       .bus-iframe {
         width: 100%;
         height: 100vh;
         max-height: 100%;
+      }
+
+      .modal-ritardo {
+        float: right;
+        width: 3rem;
+        text-align: right;
       }
     </style>
     <title>SETA al rogo</title>
@@ -149,6 +160,17 @@
 
             <ul class="list-group mt-2" id="fermate"></ul>
 
+            <p
+              id="treno-ultimo-aggiornamento"
+              class="card-text mb-0 mt-2"
+              style="display: none"
+            >
+              <small class="text-muted">
+                Ultimo aggiornamento alle
+                <span id="treno-update"></span>
+              </small>
+            </p>
+
             <nav aria-label="breadcrumb">
               <ol class="breadcrumb" id="fermate"></ol>
             </nav>
@@ -191,6 +213,13 @@
               <ul id="bus-corse-1" class="list-group list-group-flush"></ul>
             </div>
 
+            <p class="card-text mb-0 mt-2">
+              <small class="text-muted">
+                Ultimo aggiornamento alle
+                <span id="bus-update-1"></span>
+              </small>
+            </p>
+
             <div id="bus-loading-1" class="spinner-border" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
@@ -227,6 +256,13 @@
             >
               <ul id="bus-corse-2" class="list-group list-group-flush"></ul>
             </div>
+
+            <p class="card-text mb-0 mt-2">
+              <small class="text-muted">
+                Ultimo aggiornamento alle
+                <span id="bus-update-2"></span>
+              </small>
+            </p>
 
             <div id="bus-loading-2" class="spinner-border" role="status">
               <span class="visually-hidden">Loading...</span>

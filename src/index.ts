@@ -22,8 +22,8 @@ app.get("/treno", async (req, res) => {
     const t = new Trenitalia(treno);
     const c = await t.caricaDatiTreno();
     if (!c) {
-        logger.warn("c false");
-        return res.sendStatus(500);
+        logger.debug("c false");
+        return res.sendStatus(400);
     }
 
     const d = await t.caricaInfoViaggio();
