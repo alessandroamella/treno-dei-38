@@ -173,11 +173,8 @@ async function bus(cardNum = 1, fermata) {
     corseElem.innerHTML = "";
 
     for (const c of data) {
-        const dataArrivo = dateFns.parse(
-            dateFns.format(new Date(), "YYYY-MM-DD ") +
-                (c.arrivoTempoReale || c.arrivoProgrammato),
-            "YYYY-MM-DD HH:mm",
-            new Date()
+        const dataArrivo = _parseHHMM(
+            c.arrivoTempoReale || c.arrivoProgrammato
         );
 
         const card = document.querySelector(".bus-card").cloneNode(true);
@@ -293,6 +290,12 @@ function resultHandlerBS(config, elem) {
     return tabellone(elem);
 }
 
+function _clockEmoji(a) {
+    let d = ~~((a.getHours() % 12) * 2 + a.getMinutes() / 30 + 0.5);
+    d += d < 2 ? 24 : 0;
+    return String.fromCharCode(55357, 56655 + (d % 2 ? 23 + d : d) / 2);
+}
+
 /** @param {{id: string, nome: string}} stazione */
 async function tabellone(stazione) {
     stazioneModal.hide();
@@ -335,10 +338,14 @@ async function tabellone(stazione) {
                         e.numero
                     }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${
                         e.destinazione
-                    } <span class="modal-ritardo">${e.ritardo >= 0 ? "+" : ""}${
-                        e.ritardo
-                    }m</span>
-                    <span class="float-end">${e.orarioArrivo}</span>
+                    } <span class="modal-ritardo">${
+                        e.ritardo > 0
+                            ? `+${e.ritardo}m`
+                            : _clockEmoji(new Date(e.orarioArrivo)) + "👌"
+                    }</span>
+                    <span class="float-end">${_formattaData(
+                        e.orarioArrivo
+                    )}</span>
                     </li>
             `
                 )
@@ -357,6 +364,14 @@ function trenoModal(numTreno, idOrigine) {
 
 function _formattaData(data) {
     return dateFns.format(new Date(data), "HH:mm");
+}
+
+function _parseHHMM(hhmmStr) {
+    return dateFns.parse(
+        dateFns.format(new Date(), "YYYY-MM-DD ") + hhmmStr,
+        "YYYY-MM-DD HH:mm",
+        new Date()
+    );
 }
 
 let tArr = [];

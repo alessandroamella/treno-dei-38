@@ -6,7 +6,8 @@ type _TrenoTabellone = Omit<
 >;
 
 interface TrenoTabellone extends _TrenoTabellone {
-    orarioArrivo: string; // `${number}:${number}`
+    // orarioArrivo: string; // `${number}:${number}`
+    orarioArrivo: number; // `${number}:${number}`
     idOrigine: string;
 }
 

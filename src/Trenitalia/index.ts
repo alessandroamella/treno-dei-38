@@ -106,7 +106,7 @@ class Trenitalia {
             return (data as StatoTreno[])
                 .map(e => ({
                     ...Trenitalia.formattaOutput(e),
-                    orarioArrivo: e.compOrarioPartenza,
+                    orarioArrivo: e.orarioPartenza,
                     idOrigine: e.codOrigine
                 }))
                 .map(({ origine, ...rest }) => rest);
