@@ -1,4 +1,4 @@
 User-agent: *
-Disallow: 
+Disallow: /geolocation/*
 
 Sitemap: https://trenodei38.bitrey.it/sitemap.xml

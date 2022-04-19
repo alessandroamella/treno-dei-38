@@ -1,12 +1,12 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
-import fs, { readFile } from "fs";
-import util from "util";
 
 import { logger } from "./logger";
 import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
+import { Server } from "socket.io";
+import Position from "./Position";
 
 dotenv.config();
 
@@ -74,11 +74,65 @@ app.get("/fermata/:fermata", async (req, res) => {
     return f ? res.json(f) : res.sendStatus(404);
 });
 
+app.get("/geolocation/:password", (req, res) => {
+    const { PASSWORD } = process.env;
+    if (!PASSWORD) {
+        logger.error("Env PASSWORD non specificata");
+        return res.sendStatus(500);
+    }
+
+    const { password } = req.params;
+    if (password !== PASSWORD) {
+        logger.debug("Password sbagliata");
+        return res.sendStatus(401);
+    }
+
+    res.sendFile(path.join(process.cwd(), "./geolocation.html"));
+});
+
 app.all("*", (req, res) => {
     res.redirect("/");
 });
 
 const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     logger.info("Server started on port " + PORT);
+});
+
+let lastPosition: Position;
+
+const io = new Server(server);
+
+io.on("connection", socket => {
+    logger.debug("Connesso al socket " + socket.id);
+
+    if (lastPosition) socket.emit("position", lastPosition);
+
+    socket.on("position", ({ password, position }) => {
+        const { PASSWORD } = process.env;
+        if (!PASSWORD) {
+            logger.error("Env PASSWORD non specificata");
+            return socket.emit("error", "Errore del server");
+        } else if (password !== PASSWORD) {
+            logger.debug("Socket password errata");
+            return socket.emit("error", "Password errata");
+        } else if (
+            !position ||
+            typeof position !== "object" ||
+            typeof position.lat !== "number" ||
+            typeof position.lon !== "number"
+        ) {
+            return socket.emit("error", "Posizione non valida");
+        }
+
+        lastPosition = {
+            lat: position.lat,
+            lon: position.lon,
+            date: new Date().valueOf()
+        };
+
+        logger.debug(`Received lat: ${position.lat}, lon: ${position.lon}`);
+        io.emit("position", lastPosition);
+        socket.emit("ok-pos", new Date().valueOf());
+    });
 });

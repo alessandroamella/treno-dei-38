@@ -2,10 +2,17 @@
 
 // const a = document.getElementById("treno");
 
+let socket;
+
 const modal = new bootstrap.Modal(document.querySelector(".main-modal"));
 const stazioneModal = new bootstrap.Modal(
     document.querySelector(".stazione-modal")
 );
+const gpsModal = new bootstrap.Modal(document.querySelector(".gps-modal"));
+document.querySelector(".gps-modal").addEventListener("hidden.bs.modal", () => {
+    disconnettiGps();
+});
+
 const loadingHTML = `
     <div class="spinner-border" role="status">
         <span class="visually-hidden">Loading...</span>
@@ -362,8 +369,8 @@ function trenoModal(numTreno, idOrigine) {
     modal.hide();
 }
 
-function _formattaData(data) {
-    return dateFns.format(new Date(data), "HH:mm");
+function _formattaData(data, s) {
+    return dateFns.format(new Date(data), s ? "HH:mm:ss" : "HH:mm");
 }
 
 function _parseHHMM(hhmmStr) {
@@ -373,6 +380,86 @@ function _parseHHMM(hhmmStr) {
         new Date()
     );
 }
+
+function _dataBolide(date) {
+    return `bolide alle ${date ? _formattaData(date, true) : "boh"}`;
+}
+
+const bolideIcon = L.icon({
+    iconUrl: "/img/bolide.png",
+    iconSize: [100, 40],
+    iconAnchor: [50, 20],
+    popupAnchor: [0, -18]
+});
+
+let map;
+
+async function connettiGps() {
+    if (socket) await disconnettiGps();
+    console.log("connettiGps socket:", socket);
+
+    if (!map) {
+        map = L.map("map").setView([44.56384, 11.03409], 15);
+        L.tileLayer(
+            "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+            {
+                attribution:
+                    'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                maxZoom: 18,
+                id: "mapbox/streets-v11",
+                tileSize: 512,
+                zoomOffset: -1,
+                accessToken:
+                    "pk.eyJ1IjoiYml0cmV5IiwiYSI6ImNsMjZsMGZyejA2eXYza25xd3lvY3p2ZG0ifQ.G4c3HFBNVNPxAIbvaXQ2uQ"
+            }
+        ).addTo(map);
+    }
+
+    setTimeout(() => {
+        map.invalidateSize(true);
+    }, 100);
+
+    let firstRender = true;
+    let marker;
+
+    socket = await io();
+    socket.on("position", ({ lat, lon, date }) => {
+        console.log({ lat, lon });
+
+        if (firstRender) {
+            map.panTo(new L.LatLng(lat, lon));
+
+            marker = L.marker([lat, lon], { icon: bolideIcon }).addTo(map);
+            marker.bindPopup(_dataBolide(date));
+            marker.openPopup();
+
+            document.getElementById("c3-update-div").style.display = "block";
+            document.getElementById("c3-update").textContent = _formattaData(
+                date,
+                true
+            );
+
+            firstRender = false;
+        } else {
+            marker.setPopupContent(_dataBolide(date));
+        }
+
+        document.getElementById("gps-loading").style.display = "none";
+    });
+    socket.on("error", err => alert(err));
+
+    gpsModal.show();
+}
+
+async function disconnettiGps() {
+    console.log("disconnettiGps socket:", socket);
+    if (socket) {
+        if (socket.connected) await socket.disconnect();
+        socket = null;
+    }
+}
+
+document.getElementById;
 
 let tArr = [];
 function _refresh() {
