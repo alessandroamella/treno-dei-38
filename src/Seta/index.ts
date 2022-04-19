@@ -1,11 +1,17 @@
 import axios from "axios";
 import moment from "moment";
+import path from "path";
+import fs from "fs";
+import util from "util";
 import { logger } from "../logger";
 import Corsa from "./Corsa";
 import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
+import Stop, { isStop } from "./Stop";
 
 class Seta {
+    private static fermate: Stop[] | null = null;
+
     public async caricaCorse(stopId: string): Promise<Corsa[] | null> {
         let data: RawData | RawError;
         try {
@@ -80,6 +86,33 @@ class Seta {
         );
 
         return corse;
+    }
+
+    public async cercaFermata(stopId: string): Promise<Stop | null> {
+        if (!Seta.fermate) {
+            try {
+                const p = path.join(process.cwd(), "./stops.json");
+
+                const rfES6 = util.promisify(fs.readFile);
+                const f = await rfES6(p, { encoding: "utf-8" });
+
+                const obj = JSON.parse(f);
+
+                if (!Array.isArray(obj) || obj.some(s => !isStop(s))) {
+                    throw new Error("Invalid stops obj: " + f);
+                }
+
+                logger.debug("Fermate SETA caricate");
+                Seta.fermate = obj;
+            } catch (err) {
+                logger.error("Error while reading stops");
+                logger.error(err);
+                return null;
+            }
+        }
+
+        logger.debug("Cerco fermata " + stopId);
+        return Seta.fermate.find(s => s.stopId === stopId) || null;
     }
 }
 

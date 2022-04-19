@@ -1,4 +1,5 @@
 export default interface OutputFormattato {
+    numero: number;
     treno: string;
     origine: string;
     destinazione: string;

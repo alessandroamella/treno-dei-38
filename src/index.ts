@@ -1,6 +1,9 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import fs, { readFile } from "fs";
+import util from "util";
+
 import { logger } from "./logger";
 import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
@@ -19,7 +22,10 @@ app.get("/treno", async (req, res) => {
     let treno = req.query.treno;
     if (typeof treno !== "string") treno = "2463";
 
-    const t = new Trenitalia(treno);
+    let idorigine = req.query.idorigine;
+    if (typeof idorigine !== "string") idorigine = undefined;
+
+    const t = new Trenitalia(treno, idorigine);
     const c = await t.caricaDatiTreno();
     if (!c) {
         logger.debug("c false");
@@ -54,6 +60,18 @@ app.get("/bus", async (req, res) => {
     const s = new Seta();
     const c = await s.caricaCorse(fermata);
     return c ? res.json(c) : res.sendStatus(500);
+});
+
+app.get("/fermata/:fermata", async (req, res) => {
+    const { fermata } = req.params;
+
+    if (typeof fermata !== "string") {
+        return res.sendStatus(400);
+    }
+
+    const s = new Seta();
+    const f = await s.cercaFermata(fermata);
+    return f ? res.json(f) : res.sendStatus(404);
 });
 
 app.all("*", (req, res) => {

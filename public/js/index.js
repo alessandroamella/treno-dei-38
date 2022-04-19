@@ -6,8 +6,13 @@ const modal = new bootstrap.Modal(document.querySelector(".main-modal"));
 const stazioneModal = new bootstrap.Modal(
     document.querySelector(".stazione-modal")
 );
+const loadingHTML = `
+    <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+`;
 
-async function treno(numTreno) {
+async function treno(numTreno, idOrigine) {
     const numTrenoValue =
         numTreno || document.getElementById("numero-treno").value || "2463";
 
@@ -20,7 +25,8 @@ async function treno(numTreno) {
         data = (
             await axios.get("/treno", {
                 params: {
-                    treno: numTrenoValue
+                    treno: numTrenoValue,
+                    idorigine: idOrigine
                 }
             })
         ).data;
@@ -63,7 +69,13 @@ async function treno(numTreno) {
     document.getElementById("fermate").innerHTML = "";
     for (const f of fermate) {
         const li = document.createElement("li");
-        li.classList.add("list-group-item");
+        li.classList.add("list-group-item", "btn", "text-start");
+
+        li.dataset.id = f.id;
+        li.dataset.nome = f.stazione;
+        li.addEventListener("click", () => {
+            tabellone({ id: li.dataset.id, nome: li.dataset.nome });
+        });
 
         const p = document.createElement("p");
         p.textContent = f.stazione;
@@ -107,6 +119,7 @@ async function treno(numTreno) {
         new Date()
     );
 
+    document.getElementById("treno-card").scrollIntoView();
     _refresh();
 }
 
@@ -221,8 +234,7 @@ async function bus(cardNum = 1, fermata) {
     if (data.length === 0) {
         const p = document.createElement("p");
         p.textContent = "Nessuna corsa nei prossimi 90 minuti";
-        p.classList.add("py-2");
-        p.classList.add("mb-0");
+        p.classList.add("py-2", "mb-0");
         p.style.textAlign = "center";
         corseElem.appendChild(p);
     }
@@ -235,7 +247,41 @@ async function bus(cardNum = 1, fermata) {
     document.getElementById(`bus-update-${cardNum}`).textContent =
         _formattaData(new Date());
 
+    document.getElementById(`bus-${cardNum}-card`).scrollIntoView();
     _refresh();
+
+    await _infoFermata(fermata, cardNum);
+}
+
+/**
+ * @typedef Fermata
+ * @property {string} stopId
+ * @property {string} stopName
+ * @property {number} coordX
+ * @property {number} coordY
+ * @property {string} platform
+ */
+
+/**
+ * @param {string} fermata
+ * @param {number} cardNum
+ */
+async function _infoFermata(stopId, cardNum) {
+    document.getElementById("nome-corsia-" + cardNum).innerHTML = loadingHTML;
+
+    /** @type {Fermata} */
+    let data;
+    try {
+        data = (await axios.get("/fermata/" + stopId)).data;
+        if (!data) throw new Error("Stop is null");
+    } catch (err) {
+        console.log(err?.response?.data || err);
+        document.getElementById("nome-corsia-" + cardNum).textContent = stopId;
+        return;
+    }
+
+    document.getElementById("nome-corsia-" + cardNum).textContent =
+        data.stopName;
 }
 
 function sanCesario() {
@@ -257,11 +303,7 @@ async function tabellone(stazione) {
     document.querySelector(".main-modal-title").textContent =
         "Caricamento stazione " + stazione.nome;
 
-    document.querySelector(".main-modal-body").innerHTML = `
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-    `;
+    document.querySelector(".main-modal-body").innerHTML = loadingHTML;
     modal.show();
 
     /**
@@ -280,6 +322,8 @@ async function tabellone(stazione) {
         return modal.hide();
     }
 
+    console.log(data);
+
     document.querySelector(".main-modal-title").textContent =
         "Treni da " + stazione.nome;
     document.querySelector(".main-modal-body").innerHTML = `
@@ -287,9 +331,9 @@ async function tabellone(stazione) {
             ${data
                 .map(
                     e => `
-                    <li class="list-group-item btn" style="text-align: left;" onClick="trenoModal(${
-                        e.treno.split(" ")[1]
-                    });"><strong>${e.treno}</strong> ${
+                    <li class="list-group-item btn" style="text-align: left;" onclick="trenoModal(${
+                        e.numero
+                    }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${
                         e.destinazione
                     } <span class="modal-ritardo">${e.ritardo >= 0 ? "+" : ""}${
                         e.ritardo
@@ -306,22 +350,22 @@ async function tabellone(stazione) {
     _refresh();
 }
 
-function trenoModal(numTreno) {
-    treno(numTreno);
+function trenoModal(numTreno, idOrigine) {
+    treno(numTreno, idOrigine);
     modal.hide();
-    document.body.scrollTop = document.documentElement.scrollTop = 0;
 }
 
 function _formattaData(data) {
     return dateFns.format(new Date(data), "HH:mm");
 }
 
+let tArr = [];
 function _refresh() {
-    // Enable tooltips
     const tooltipTriggerList = [].slice.call(
         document.querySelectorAll('[data-bs-toggle="tooltip"]')
     );
-    const tooltipList = tooltipTriggerList.map(
+    tArr.forEach(t => t.hide());
+    tArr = tooltipTriggerList.map(
         tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl)
     );
 }

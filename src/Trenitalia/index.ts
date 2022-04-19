@@ -7,12 +7,14 @@ import TrenoTabellone from "./TrenoTabellone";
 
 class Trenitalia {
     readonly numeroTreno: string;
+    readonly idOrigine?: string;
 
     private stazionePartenza: string | null = null;
     private dataPartezaMs: string | null = null;
 
-    constructor(numeroTreno: string) {
+    constructor(numeroTreno: string, idOrigine?: string) {
         this.numeroTreno = numeroTreno;
+        this.idOrigine = idOrigine;
     }
 
     public static isStatoTreno = (v: unknown): v is StatoTreno => {
@@ -50,10 +52,18 @@ class Trenitalia {
             return false;
         }
 
-        const [numeroTreno, stazionePartenza, dataPartenzaMs] = (data as string)
-            .trim()
-            .split("|")[1]
-            .split("-");
+        const risultati = (data as string).trim().split("\n");
+        const mapped = risultati
+            .map(r => r.split("|")[1].split("-").slice(1))
+            .map(r => ({
+                stazionePartenza: r[0],
+                dataPartenzaMs: r[1]
+            }));
+
+        const { stazionePartenza, dataPartenzaMs } =
+            (this.idOrigine &&
+                mapped.find(e => e.stazionePartenza === this.idOrigine)) ||
+            mapped[0];
 
         this.stazionePartenza = stazionePartenza;
         this.dataPartezaMs = dataPartenzaMs;
@@ -96,10 +106,12 @@ class Trenitalia {
             return (data as StatoTreno[])
                 .map(e => ({
                     ...Trenitalia.formattaOutput(e),
-                    orarioArrivo: e.compOrarioPartenza
+                    orarioArrivo: e.compOrarioPartenza,
+                    idOrigine: e.codOrigine
                 }))
-                .map(({ origine, ...rest }) => rest)
-                .filter(e => e.treno.toLowerCase().includes("reg"));
+                .map(({ origine, ...rest }) => rest);
+            // SOLO REGIONALI
+            // .filter(e => e.treno.toLowerCase().includes("reg"));
         } catch (err) {
             logger.error("Errore nel caricamento tabellone");
             logger.error(err);
@@ -109,6 +121,7 @@ class Trenitalia {
 
     public static formattaOutput(statoTreno: StatoTreno): OutputFormattato {
         return {
+            numero: statoTreno.numeroTreno,
             treno: statoTreno.compNumeroTreno,
             origine: statoTreno.origine,
             destinazione: statoTreno.destinazione,
