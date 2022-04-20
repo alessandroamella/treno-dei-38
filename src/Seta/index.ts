@@ -80,7 +80,7 @@ class Seta {
                     "HH:mm"
                 ).unix() -
                 moment(
-                    b.arrivoProgrammato || b.arrivoProgrammato,
+                    b.arrivoTempoReale || b.arrivoProgrammato,
                     "HH:mm"
                 ).unix()
         );

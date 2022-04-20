@@ -442,6 +442,9 @@ async function connettiGps() {
             firstRender = false;
         } else {
             marker.setPopupContent(_dataBolide(date));
+
+            const newLatLng = new L.LatLng(lat, lon);
+            marker.setLatLng(newLatLng);
         }
 
         document.getElementById("gps-loading").style.display = "none";
