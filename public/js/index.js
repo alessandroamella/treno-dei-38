@@ -33,7 +33,7 @@ async function treno(numTreno, idOrigine) {
             await axios.get("/treno", {
                 params: {
                     treno: numTrenoValue,
-                    idorigine: idOrigine
+                    idorigine: idOrigine || "S05037"
                 }
             })
         ).data;
@@ -143,6 +143,8 @@ async function treno(numTreno, idOrigine) {
  * @property {string | null} prossimaFermata Nome prossima fermata
  */
 
+const busInterval = {};
+
 /**
  * @param {string} fermata
  */
@@ -192,7 +194,10 @@ async function bus(cardNum = 1, fermata) {
             ? "block"
             : "none";
         card.querySelector(".bus-arrivo").textContent =
-            dateFns.differenceInMinutes(dataArrivo, new Date()) +
+            dateFns.differenceInMinutes(
+                dataArrivo,
+                _parseHHMM(_formattaData(new Date(), false))
+            ) +
             "m" +
             (!c.arrivoTempoReale ? "*" : "");
 
@@ -255,6 +260,11 @@ async function bus(cardNum = 1, fermata) {
     _refresh();
 
     await _infoFermata(fermata, cardNum);
+
+    if (busInterval[cardNum]) {
+        clearInterval(busInterval[cardNum]);
+    }
+    busInterval[cardNum] = setInterval(() => bus(cardNum, fermata), 30000);
 }
 
 /**
@@ -485,9 +495,15 @@ document.getElementById("fermata-bus-2").addEventListener("change", e => {
     bus(2, e.target.value);
 });
 
-treno();
-bus(1, "MO6133");
-bus(2, "MO6134");
+if (dateFns.isBefore(new Date(), _parseHHMM("07:42"))) {
+    treno(17408, "S05037");
+    bus(1, "MO2076");
+    bus(2, "MO3600");
+} else {
+    treno();
+    bus(1, "MO6133");
+    bus(2, "MO6134");
+}
 
 autocompleteBS([
     {

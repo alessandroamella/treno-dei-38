@@ -33,7 +33,7 @@ class Trenitalia {
         try {
             data = (
                 await axios.get(
-                    "http://www.viaggiatreno.it/viaggiatrenonew/resteasy/viaggiatreno/cercaNumeroTrenoTrenoAutocomplete/" +
+                    "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/cercaNumeroTrenoTrenoAutocomplete/" +
                         this.numeroTreno
                 )
             ).data;
@@ -81,7 +81,7 @@ class Trenitalia {
         }
 
         const { data } = await axios.get(
-            `http://www.viaggiatreno.it/viaggiatrenonew/resteasy/viaggiatreno/andamentoTreno/${this.stazionePartenza}/${this.numeroTreno}/${this.dataPartezaMs}`
+            `http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/andamentoTreno/${this.stazionePartenza}/${this.numeroTreno}/${this.dataPartezaMs}`
         );
 
         if (!Trenitalia.isStatoTreno(data)) {
@@ -100,7 +100,7 @@ class Trenitalia {
     ): Promise<TrenoTabellone[] | null> {
         try {
             const { data } = await axios.get(
-                `http://www.viaggiatreno.it/viaggiatrenonew/resteasy/viaggiatreno/partenze/${codiceStazione}/${new Date()}`
+                `http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/partenze/${codiceStazione}/${new Date()}`
             );
 
             return (data as StatoTreno[])
@@ -146,7 +146,7 @@ class Trenitalia {
     ): Promise<Stazione[] | null> {
         try {
             const { data } = await axios.get(
-                "http://www.viaggiatreno.it/viaggiatrenonew/resteasy/viaggiatreno/autocompletaStazione/" +
+                "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/" +
                     nome
             );
 
