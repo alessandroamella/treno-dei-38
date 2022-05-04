@@ -495,14 +495,39 @@ document.getElementById("fermata-bus-2").addEventListener("change", e => {
     bus(2, e.target.value);
 });
 
-if (dateFns.isBefore(new Date(), _parseHHMM("07:42"))) {
-    treno(17408, "S05037");
-    bus(1, "MO2076");
-    bus(2, "MO3600");
-} else {
-    treno();
+function isBefore(hhmmStr) {
+    return dateFns.isBefore(new Date(), _parseHHMM(hhmmStr));
+}
+
+// Bus
+if (isBefore("07:42")) {
+    sanCesario();
+} else if (isBefore("09:00")) {
     bus(1, "MO6133");
     bus(2, "MO6134");
+} else if (isBefore("16:30")) {
+    bus(1, "MO6733");
+    bus(2, "MO6720");
+} else {
+    sanCesario();
+}
+
+if (isBefore("08:00")) {
+    treno(17408, "S05037");
+} else if (isBefore("08:20")) {
+    treno(2462, "S05037");
+} else if (isBefore("09:00")) {
+    treno(3904, "S05037");
+} else if (isBefore("12:50")) {
+    treno(17413, "S05032");
+} else if (isBefore("13:50")) {
+    treno(2463, "S05032");
+} else if (isBefore("14:50")) {
+    treno(17415, "S05032");
+} else if (isBefore("16:50")) {
+    treno(17417, "S05032");
+} else {
+    treno(3945, "S05032");
 }
 
 autocompleteBS([
