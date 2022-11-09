@@ -150,6 +150,8 @@ const busInterval = {};
  * @param {string} fermata
  */
 async function bus(cardNum = 1, fermata) {
+    await _infoFermata(fermata, cardNum);
+
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
@@ -269,8 +271,6 @@ async function bus(cardNum = 1, fermata) {
     document.getElementById(`bus-${cardNum}-card`).scrollIntoView();
     _refresh();
 
-    await _infoFermata(fermata, cardNum);
-
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
@@ -278,6 +278,8 @@ async function bus(cardNum = 1, fermata) {
 }
 
 async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
+    await _infoFermata(fermata, cardNum);
+
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
@@ -393,8 +395,6 @@ async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
     document.getElementById(`bus-${cardNum}-card`).scrollIntoView();
     _refresh();
 
-    // await _infoFermata(fermata, cardNum);
-
     if (nomeFermata) {
         document.getElementById(`nome-corsia-${cardNum}`).textContent =
             nomeFermata;
@@ -405,7 +405,7 @@ async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
     }
     busInterval[cardNum] = setInterval(
         () => busTper(cardNum, fermata, linee),
-        30000
+        60000
     );
 }
 
@@ -428,13 +428,20 @@ async function _infoFermata(stopId, cardNum) {
     /** @type {Fermata} */
     let data;
     try {
-        data = (await axios.get("/fermata/" + stopId)).data;
+        data = (
+            await axios.get(
+                (stopId.startsWith("MO") ? "/fermata/" : "/fermatatper/") +
+                    stopId
+            )
+        ).data;
         if (!data) throw new Error("Stop is null");
     } catch (err) {
         console.log(err?.response?.data || err);
         document.getElementById("nome-corsia-" + cardNum).textContent = stopId;
         return;
     }
+
+    console.log(data);
 
     document.getElementById("nome-corsia-" + cardNum).textContent =
         data.stopName;
@@ -656,10 +663,14 @@ document.getElementById("numero-treno").addEventListener("change", e => {
     treno();
 });
 document.getElementById("fermata-bus-1").addEventListener("change", e => {
-    bus(1, e.target.value);
+    e.target.value.startsWith("MO")
+        ? bus(1, e.target.value)
+        : busTper(1, e.target.value);
 });
 document.getElementById("fermata-bus-2").addEventListener("change", e => {
-    bus(2, e.target.value);
+    e.target.value.startsWith("MO")
+        ? bus(2, e.target.value)
+        : busTper(2, e.target.value);
 });
 
 function isBefore(hhmmStr) {

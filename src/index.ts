@@ -7,7 +7,7 @@ import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
 import { Server } from "socket.io";
 import Position from "./Position";
-import Tper from "./Tper";
+import Tper, { TperStop } from "./Tper";
 
 dotenv.config();
 
@@ -75,8 +75,8 @@ app.get("/bustper", async (req, res) => {
 
     if (
         typeof fermata !== "string" ||
-        !Array.isArray(linee) ||
-        !linee.every(l => typeof l === "string")
+        (linee &&
+            (!Array.isArray(linee) || !linee.every(l => typeof l === "string")))
     ) {
         return res.sendStatus(400);
     }
@@ -102,6 +102,18 @@ app.get("/fermata/:fermata", async (req, res) => {
 
     const s = new Seta();
     const f = await s.cercaFermata(fermata);
+    return f ? res.json(f) : res.sendStatus(404);
+});
+
+app.get("/fermatatper/:fermata", async (req, res) => {
+    const { fermata } = req.params;
+
+    if (typeof fermata !== "string") {
+        return res.sendStatus(400);
+    }
+
+    const t = new Tper();
+    const f = await t.cercaFermata(fermata);
     return f ? res.json(f) : res.sendStatus(404);
 });
 

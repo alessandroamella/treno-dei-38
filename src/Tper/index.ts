@@ -3,6 +3,7 @@ import moment from "moment-timezone";
 import { logger } from "../logger";
 import { parseStringPromise } from "xml2js";
 import Corsa from "../Seta/Corsa";
+import Stop from "../Seta/Stop";
 
 interface CustomErr {
     msg: string;
@@ -11,6 +12,14 @@ interface CustomErr {
 
 interface FnErr {
     err: CustomErr;
+}
+
+export interface TperStop extends Stop {
+    routes: string[];
+}
+
+interface StopsObj {
+    [stopId: string]: Omit<TperStop, "stopId">;
 }
 
 function isFnErr(err: unknown): err is FnErr {
@@ -28,6 +37,8 @@ function isFnErr(err: unknown): err is FnErr {
 }
 
 class Tper {
+    private static fermate: TperStop[] | null = null;
+
     private static async _getTripsForRoute(
         stopId: string,
         route: string
@@ -187,10 +198,19 @@ class Tper {
 
     public async caricaCorse(
         stopId: string,
-        linee: string[]
+        linee?: string[]
     ): Promise<Corsa[] | null> {
         const corse: Corsa[] = [];
         const jobs = [];
+
+        if (!linee) {
+            const s = await this.cercaFermata(stopId);
+            if (!s) {
+                logger.debug("TPER caricaCorse can't find stop");
+                return [];
+            }
+            linee = s.routes;
+        }
 
         for (const linea of linee) {
             const job = Tper._getTripsForRoute(stopId, linea)
@@ -227,6 +247,60 @@ class Tper {
         );
 
         return corse;
+    }
+
+    public async cercaFermata(stopId: string): Promise<TperStop | null> {
+        if (!Tper.fermate) {
+            try {
+                const { data } = await axios.post(
+                    "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate"
+                );
+
+                const parsed = await parseStringPromise(data);
+
+                const stops: StopsObj = {};
+                for (const stop of parsed.DataSet["diffgr:diffgram"][0]
+                    .NewDataSet[0].Table) {
+                    if (!(stop.codice_fermata[0] in stops)) {
+                        stops[stop.codice_fermata[0]] = {
+                            coordX: stop.coordinata_x[0],
+                            coordY: stop.coordinata_y[0],
+                            stopName: stop.denominazione[0],
+                            routes: [stop.codice_linea][0]
+                        };
+                    } else {
+                        if (
+                            !stops[stop.codice_fermata[0]].routes.includes(
+                                stop.codice_linea[0]
+                            )
+                        ) {
+                            stops[stop.codice_fermata[0]].routes.push(
+                                stop.codice_linea[0]
+                            );
+                        }
+                    }
+                }
+
+                logger.debug("Fermate TPER caricate");
+                Tper.fermate = Object.entries(stops).map(
+                    e =>
+                        ({
+                            stopId: e[0],
+                            stopName: e[1].stopName,
+                            coordX: e[1].coordX,
+                            coordY: e[1].coordY,
+                            routes: e[1].routes
+                        } as TperStop)
+                );
+            } catch (err) {
+                logger.error("Error while reading TPER stops");
+                logger.error(err);
+                return null;
+            }
+        }
+
+        logger.debug("Cerco fermata TPER " + stopId);
+        return Tper.fermate.find(s => s.stopId === stopId) || null;
     }
 }
 
