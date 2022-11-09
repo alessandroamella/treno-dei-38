@@ -512,22 +512,44 @@ if (isBefore("07:42")) {
     sanCesario();
 }
 
-if (isBefore("08:00")) {
-    treno(17408, "S05037");
+if (isBefore("08:05")) {
+    treno(3907, "S05037");
 } else if (isBefore("08:20")) {
-    treno(2462, "S05037");
-} else if (isBefore("09:00")) {
-    treno(3904, "S05037");
+    treno(17425, "S05037");
+} else if (isBefore("08:42")) {
+    treno(17407, "S05037");
+} else if (isBefore("09:05")) {
+    treno(2067, "S05037");
+} else if (isBefore("12:05")) {
+    treno(3917, "S05037");
+} else if (isBefore("12:33")) {
+    treno(3912, "S05043");
 } else if (isBefore("12:50")) {
-    treno(17413, "S05032");
+    treno(17414, "S05043");
+} else if (isBefore("13:33")) {
+    treno(3914, "S05043");
 } else if (isBefore("13:50")) {
-    treno(2463, "S05032");
+    treno(2474, "S05043");
+} else if (isBefore("14:33")) {
+    treno(3916, "S05043");
 } else if (isBefore("14:50")) {
-    treno(17415, "S05032");
-} else if (isBefore("16:50")) {
-    treno(17417, "S05032");
+    treno(17416, "S05043");
+} else if (isBefore("15:33")) {
+    treno(3918, "S05043");
+} else if (isBefore("15:50")) {
+    treno(2478, "S05043");
+} else if (isBefore("16:33")) {
+    treno(3920, "S05043");
+} else if (isBefore("16:54")) {
+    treno(17418, "S05043");
+} else if (isBefore("17:33")) {
+    treno(3922, "S05043");
+} else if (isBefore("17:50")) {
+    treno(2482, "S05043");
+} else if (isBefore("18:33")) {
+    treno(3924, "S05043");
 } else {
-    treno(3945, "S05032");
+    treno(17400, "S05043");
 }
 
 autocompleteBS([
