@@ -54,7 +54,8 @@ class Seta {
             busNum: s.busnum || null,
             postiTotali: s.posti_totali || null,
             numPasseggeri: s.num_passeggeri || null,
-            prossimaFermata: s.next_stop || null
+            prossimaFermata: s.next_stop || null,
+            tempoReale: !!s.busnum
         }));
 
         for (let i = 0; i < corse.length; i++) {

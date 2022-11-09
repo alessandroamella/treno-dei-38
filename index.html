@@ -287,6 +287,14 @@
               <li onclick="sanCesario()">
                 <a class="dropdown-item" href="#">San Cesario</a>
               </li>
+              <li onclick="busTper(1, '306', ['36', '187'])">
+                <a class="dropdown-item" href="#">
+                  Bologna Centrale da via Irnerio
+                </a>
+              </li>
+              <li onclick="bolognaFs()">
+                <a class="dropdown-item" href="#">Bologna Centrale dai viali</a>
+              </li>
               <li onclick="treno(3907)">
                 <a class="dropdown-item" href="#">Treno 8:05</a>
               </li>
@@ -502,8 +510,8 @@
         style="object-fit: contain; max-width: 1rem"
         loading="lazy"
       />
-      <span style="font-weight: 600" class="bus-linea">5</span>
-      <span class="bus-destinazione">D'Avia</span>
+      <span style="font-weight: 600" class="bus-linea"></span>
+      <span class="bus-destinazione"></span>
       <span style="float: right" class="bus-temporeale">
         <img
           src="/img/realtime.gif"

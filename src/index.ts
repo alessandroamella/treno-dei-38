@@ -7,6 +7,7 @@ import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
 import { Server } from "socket.io";
 import Position from "./Position";
+import Tper from "./Tper";
 
 dotenv.config();
 
@@ -51,15 +52,45 @@ app.get("/tabellone/:id", async (req, res) => {
 });
 
 app.get("/bus", async (req, res) => {
-    const { fermata } = req.query;
+    const { fermata } = req.query as any;
 
     if (typeof fermata !== "string") {
         return res.sendStatus(400);
     }
 
-    const s = new Seta();
-    const c = await s.caricaCorse(fermata);
-    return c ? res.json(c) : res.sendStatus(500);
+    try {
+        const s = new Seta();
+        const c = await s.caricaCorse(fermata);
+        if (!c) throw new Error("SETA c falsy");
+        return res.json(c);
+    } catch (err) {
+        logger.error("/bus err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
+});
+
+app.get("/bustper", async (req, res) => {
+    const { fermata, linee } = req.query as any;
+
+    if (
+        typeof fermata !== "string" ||
+        !Array.isArray(linee) ||
+        !linee.every(l => typeof l === "string")
+    ) {
+        return res.sendStatus(400);
+    }
+
+    try {
+        const t = new Tper();
+        const c = await t.caricaCorse(fermata, linee);
+        if (!c) throw new Error("TPER c falsy");
+        return res.json(c);
+    } catch (err) {
+        logger.error("/tperbus err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
 });
 
 app.get("/fermata/:fermata", async (req, res) => {
