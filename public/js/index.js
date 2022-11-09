@@ -393,7 +393,7 @@ async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
     // await _infoFermata(fermata, cardNum);
 
     if (nomeFermata) {
-        document.getElementById(`me-corsia-${cardNum}`).textContent =
+        document.getElementById(`nome-corsia-${cardNum}`).textContent =
             nomeFermata;
     }
 
@@ -443,7 +443,7 @@ function sanCesario() {
 }
 
 function bolognaFs() {
-    busTper(1, "19", ["33"], "Da via Irnerio");
+    busTper(1, "19", ["33"], "Per la stazione");
     busTper(
         2,
         "19",
@@ -463,7 +463,7 @@ function bolognaFs() {
             "916",
             "918"
         ],
-        "Dai viali"
+        "Per l'autostazione"
     );
 }
 
