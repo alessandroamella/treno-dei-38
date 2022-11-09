@@ -198,6 +198,7 @@ async function bus(cardNum = 1, fermata) {
         const card = document.querySelector(".bus-card").cloneNode(true);
         card.style.display = "block";
         card.querySelector(".bus-linea").textContent = c.linea;
+        card.querySelector(".bus-logo").src = "/img/seta.png";
         card.querySelector(".bus-destinazione").textContent = c.destinazione;
         card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
             ? "block"
@@ -321,7 +322,9 @@ async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
         const card = document.querySelector(".bus-card").cloneNode(true);
         card.style.display = "block";
         card.querySelector(".bus-linea").textContent = c.linea;
-        // card.querySelector(".bus-destinazione").textContent = c.destinazione;
+        card.querySelector(".bus-logo").src = "/img/tper.png";
+        card.querySelector(".bus-destinazione").textContent =
+            c.destinazione || "";
         card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
             ? "block"
             : "none";
