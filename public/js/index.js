@@ -276,7 +276,7 @@ async function bus(cardNum = 1, fermata) {
     busInterval[cardNum] = setInterval(() => bus(cardNum, fermata), 30000);
 }
 
-async function busTper(cardNum = 1, fermata, linee) {
+async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
@@ -392,6 +392,11 @@ async function busTper(cardNum = 1, fermata, linee) {
 
     // await _infoFermata(fermata, cardNum);
 
+    if (nomeFermata) {
+        document.getElementById(`me-corsia-${cardNum}`).textContent =
+            nomeFermata;
+    }
+
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
@@ -438,23 +443,28 @@ function sanCesario() {
 }
 
 function bolognaFs() {
-    busTper(1, "19", ["33"]);
-    busTper(2, "19", [
-        "101",
-        "106",
-        "186",
-        "200",
-        "205",
-        "206",
-        "207",
-        "237",
-        "243",
-        "273",
-        "900",
-        "906",
-        "916",
-        "918"
-    ]);
+    busTper(1, "19", ["33"], "Da via Irnerio");
+    busTper(
+        2,
+        "19",
+        [
+            "101",
+            "106",
+            "186",
+            "200",
+            "205",
+            "206",
+            "207",
+            "237",
+            "243",
+            "273",
+            "900",
+            "906",
+            "916",
+            "918"
+        ],
+        "Dai viali"
+    );
 }
 
 function resultHandlerBS(config, elem) {
