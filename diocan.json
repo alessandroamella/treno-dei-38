@@ -1,0 +1,108 @@
+[
+  {
+    "item": {
+      "stopId": "MO2076",
+      "stopName": "San Cesario",
+      "coordX": 661667.784,
+      "coordY": 936530.748
+    },
+    "refIndex": 1189,
+    "score": 0.00047849782916503317
+  },
+  {
+    "item": {
+      "stopId": "MO3600",
+      "stopName": "San Cesario",
+      "coordX": 661705.287,
+      "coordY": 936589.113
+    },
+    "refIndex": 2855,
+    "score": 0.00047849782916503317
+  },
+  {
+    "item": {
+      "stopId": "MOCE40",
+      "stopName": "San Cesario",
+      "coordX": 661679.75,
+      "coordY": 936560.938
+    },
+    "refIndex": 4852,
+    "score": 0.00047849782916503317
+  },
+  {
+    "item": {
+      "stopId": "MO3603",
+      "stopName": "San Cesario scuole",
+      "coordX": 661991.929,
+      "coordY": 936332.87
+    },
+    "refIndex": 2858,
+    "score": 0.3024823232391245
+  },
+  {
+    "item": {
+      "stopId": "MO3604",
+      "stopName": "San Cesario scuole",
+      "coordX": 662009.284,
+      "coordY": 936299.539
+    },
+    "refIndex": 2859,
+    "score": 0.3024823232391245
+  },
+  {
+    "item": {
+      "stopId": "MOSCE",
+      "stopName": "San Cesario S.P.",
+      "coordX": 661674.5,
+      "coordY": 936532.688
+    },
+    "refIndex": 6134,
+    "score": 0.3024823232391245
+  },
+  {
+    "item": {
+      "stopId": "68041",
+      "stopName": "SAN CESARIO CHIESA",
+      "coordX": "661723",
+      "coordY": "936422",
+      "routes": [
+        "646"
+      ]
+    },
+    "refIndex": 3975,
+    "score": 0.3024823232391245
+  },
+  {
+    "item": {
+      "stopId": "68042",
+      "stopName": "SAN CESARIO CHIESA",
+      "coordX": "661759",
+      "coordY": "936396",
+      "routes": [
+        "646"
+      ]
+    },
+    "refIndex": 3976,
+    "score": 0.3024823232391245
+  },
+  {
+    "item": {
+      "stopId": "MO1785",
+      "stopName": "San Cesario Case Nuove",
+      "coordX": 662532.917,
+      "coordY": 935715.358
+    },
+    "refIndex": 866,
+    "score": 0.35481338923357547
+  },
+  {
+    "item": {
+      "stopId": "MO919",
+      "stopName": "San Cesario Case Nuove",
+      "coordX": 662547.117,
+      "coordY": 935680.054
+    },
+    "refIndex": 4494,
+    "score": 0.35481338923357547
+  }
+]

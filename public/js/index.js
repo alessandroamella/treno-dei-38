@@ -5,6 +5,15 @@
 let socket;
 
 const modal = new bootstrap.Modal(document.querySelector(".main-modal"));
+const cercaFermataModal = new bootstrap.Modal(
+    document.querySelector(".cerca-fermata-modal")
+);
+document
+    .querySelector(".cerca-fermata-modal")
+    .addEventListener("hidden.bs.modal", function (event) {
+        // document.getElementById("gps-status").innerHTML = "";
+        document.getElementById("nome-fermata-input").value = "";
+    });
 const stazioneModal = new bootstrap.Modal(
     document.querySelector(".stazione-modal")
 );
@@ -147,48 +156,98 @@ async function treno(numTreno, idOrigine) {
 const busInterval = {};
 
 /**
- * @param {string} fermata
+ * @param {string | string[]} fermata
  */
-async function bus(cardNum = 1, fermata) {
-    await _infoFermata(fermata, cardNum);
+async function fetchStop(fermata, agency = "seta" | "tper") {
+    const { data } = await axios.get(agency === "seta" ? "bus" : "bustper", {
+        params: {
+            fermata
+        }
+    });
+    // if (!data) throw new Error("non worka");
+    return data;
+}
 
-    if (busInterval[cardNum]) {
-        clearInterval(busInterval[cardNum]);
-    }
-
+function setBusCardLoading(cardNum = 1) {
     document.getElementById(`bus-loading-${cardNum}`).style.display = "block";
     document.getElementById(`bus-corse-card-${cardNum}`).style.display = "none";
+}
+function setBusCardLoaded(cardNum = 1) {
+    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
+    document.getElementById(`bus-corse-card-${cardNum}`).style.display =
+        "block";
+}
+function hideBusCard(cardNum = 1) {
+    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
+    document.getElementById(`bus-corse-card-${cardNum}`).style.display = "none";
+}
 
-    let fermataValue =
-        fermata ||
-        document.getElementById(`fermata-bus-${cardNum}`)?.value?.trim() ||
-        "MO6133";
-
-    /** @type {Corsa[]} */
-    let data;
-    try {
-        data = (
-            await axios.get("/bus", {
-                params: {
-                    fermata: fermataValue
-                }
-            })
-        ).data;
-        if (!data) throw new Error("non worka");
-    } catch (err) {
-        document.getElementById(`bus-loading-${cardNum}`).style.display =
-            "none";
-        document.getElementById(`bus-corse-card-${cardNum}`).style.display =
-            "none";
-
-        if (busInterval[cardNum]) {
-            clearInterval(busInterval[cardNum]);
+function setSetaBus(c, card) {
+    if (c.busNum) {
+        card.title += "Bus " + c.busNum;
+        card.title += "<br>Programmato: " + c.arrivoProgrammato;
+        card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
+        if (c.numPasseggeri) {
+            card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
+        } else if (c.postiTotali) {
+            card.title += "<br>Posti totali: " + c.postiTotali;
         }
-        return alert(err.response?.data || "Errore sconosciuto");
+
+        // card.style.cursor = "pointer";
+        card.classList.add("btn");
+        card.style.textAlign = "left";
+
+        card.addEventListener("click", () => {
+            document.querySelector(
+                ".main-modal-title"
+            ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
+            document.querySelector(
+                ".main-modal-body"
+            ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
+            modal.show();
+        });
+    } else {
+        card.title += "Programmato: " + c.arrivoProgrammato;
+        card.classList.remove("btn");
     }
+}
 
-    console.log(data);
+function setTperBus(c, card) {
+    if (c.tempoReale) {
+        card.title += "Bus " + c.busNum;
+        card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
+        // if (c.numPasseggeri) {
+        //     card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
+        // } else if (c.postiTotali) {
+        //     card.title += "<br>Posti totali: " + c.postiTotali;
+        // }
 
+        // card.style.cursor = "pointer";
+        // card.classList.add("btn");
+        // card.style.textAlign = "left";
+
+        // card.addEventListener("click", () => {
+        //     document.querySelector(
+        //         ".main-modal-title"
+        //     ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
+        //     document.querySelector(
+        //         ".main-modal-body"
+        //     ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
+        //     modal.show();
+        // });
+    } else {
+        card.title += "Programmato: " + c.arrivoProgrammato;
+        card.classList.remove("btn");
+    }
+}
+
+/**
+ *
+ * @param {any} data
+ * @param {number} cardNum
+ * @param {'seta' | 'tper'} agency
+ */
+function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
     const corseElem = document.getElementById(`bus-corse-${cardNum}`);
     corseElem.innerHTML = "";
 
@@ -200,7 +259,8 @@ async function bus(cardNum = 1, fermata) {
         const card = document.querySelector(".bus-card").cloneNode(true);
         card.style.display = "block";
         card.querySelector(".bus-linea").textContent = c.linea;
-        card.querySelector(".bus-logo").src = "/img/seta.png";
+        card.querySelector(".bus-logo").src =
+            "/img/" + (data.agency || agency) + ".png";
         card.querySelector(".bus-destinazione").textContent = c.destinazione;
         card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
             ? "block"
@@ -218,33 +278,8 @@ async function bus(cardNum = 1, fermata) {
         card.dataset.bsHtml = true;
         card.title = "";
 
-        if (c.busNum) {
-            card.title += "Bus " + c.busNum;
-            card.title += "<br>Programmato: " + c.arrivoProgrammato;
-            card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
-            if (c.numPasseggeri) {
-                card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
-            } else if (c.postiTotali) {
-                card.title += "<br>Posti totali: " + c.postiTotali;
-            }
-
-            // card.style.cursor = "pointer";
-            card.classList.add("btn");
-            card.style.textAlign = "left";
-
-            card.addEventListener("click", () => {
-                document.querySelector(
-                    ".main-modal-title"
-                ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
-                document.querySelector(
-                    ".main-modal-body"
-                ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
-                modal.show();
-            });
-        } else {
-            card.title += "Programmato: " + c.arrivoProgrammato;
-            card.classList.remove("btn");
-        }
+        if (agency === "seta") setSetaBus(c, card);
+        else if (agency === "tper") setTperBus(c, card);
 
         if (c.prossimaFermata) {
             card.title += "<br>Prossima fermata: " + c.prossimaFermata;
@@ -259,153 +294,75 @@ async function bus(cardNum = 1, fermata) {
         p.style.textAlign = "center";
         corseElem.appendChild(p);
     }
-
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
-    document.getElementById(`bus-corse-card-${cardNum}`).style.display =
-        "block";
-    document.getElementById(`fermata-bus-${cardNum}`).value = fermataValue;
-
-    document.getElementById(`bus-update-${cardNum}`).textContent =
-        _formattaData(new Date());
-
-    document.getElementById(`bus-${cardNum}-card`).scrollIntoView();
-    _refresh();
-
-    if (busInterval[cardNum]) {
-        clearInterval(busInterval[cardNum]);
-    }
-    busInterval[cardNum] = setInterval(() => bus(cardNum, fermata), 30000);
 }
 
-async function busTper(cardNum = 1, fermata, linee, nomeFermata) {
-    await _infoFermata(fermata, cardNum);
+/**
+ * @param {number} cardNum
+ * @param {string | string[]} fermata
+ * @param {Corsa[]} [data]
+ * @param {string} [nomeFermata]
+ * @param {'seta' | 'tper'} [agency]
+ */
+async function bus(
+    cardNum,
+    fermata,
+    data = null,
+    nomeFermata = null,
+    agency = "seta"
+) {
+    if (!nomeFermata) await _infoFermata(fermata, cardNum);
 
     if (busInterval[cardNum]) {
         clearInterval(busInterval[cardNum]);
     }
 
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "block";
-    document.getElementById(`bus-corse-card-${cardNum}`).style.display = "none";
+    setBusCardLoading(cardNum);
 
-    /** @type {Corsa[]} */
-    let data;
-    try {
-        data = (
-            await axios.get("/bustper", {
-                params: {
-                    fermata,
-                    linee
-                }
-            })
-        ).data;
-        if (!data) throw new Error("non worka");
-    } catch (err) {
-        document.getElementById(`bus-loading-${cardNum}`).style.display =
-            "none";
-        document.getElementById(`bus-corse-card-${cardNum}`).style.display =
-            "none";
+    let fermataValue =
+        fermata ||
+        document.getElementById(`fermata-bus-${cardNum}`)?.value?.trim() ||
+        "MO6133";
 
-        if (busInterval[cardNum]) {
-            clearInterval(busInterval[cardNum]);
+    if (!data) {
+        try {
+            data = await fetchStop(fermataValue);
+        } catch (err) {
+            hideBusCard();
+
+            if (busInterval[cardNum]) {
+                clearInterval(busInterval[cardNum]);
+            }
+            return alert(err.response?.data || "Errore sconosciuto");
         }
-        return alert(err.response?.data || "Errore sconosciuto");
     }
 
-    console.log(data);
+    console.log("bus", data);
 
-    const corseElem = document.getElementById(`bus-corse-${cardNum}`);
-    corseElem.innerHTML = "";
+    addCorseToBusCard(data, cardNum, agency);
 
-    for (const c of data) {
-        const dataArrivo = _parseHHMM(
-            c.arrivoTempoReale || c.arrivoProgrammato
-        );
+    setBusCardLoaded(cardNum);
 
-        const card = document.querySelector(".bus-card").cloneNode(true);
-        card.style.display = "block";
-        card.querySelector(".bus-linea").textContent = c.linea;
-        card.querySelector(".bus-logo").src = "/img/tper.png";
-        card.querySelector(".bus-destinazione").textContent =
-            c.destinazione || "";
-        card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
-            ? "block"
-            : "none";
-        card.querySelector(".bus-arrivo").textContent =
-            dateFns.differenceInMinutes(
-                dataArrivo,
-                _parseHHMM(_formattaData(new Date(), false))
-            ) +
-            "m" +
-            (!c.arrivoTempoReale ? "*" : "");
-
-        card.dataset.bsToggle = "tooltip";
-        card.dataset.bsTrigger = "hover";
-        card.dataset.bsHtml = true;
-        card.title = "";
-
-        if (c.tempoReale) {
-            card.title += "Bus " + c.busNum;
-            card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
-            // if (c.numPasseggeri) {
-            //     card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
-            // } else if (c.postiTotali) {
-            //     card.title += "<br>Posti totali: " + c.postiTotali;
-            // }
-
-            // card.style.cursor = "pointer";
-            // card.classList.add("btn");
-            // card.style.textAlign = "left";
-
-            // card.addEventListener("click", () => {
-            //     document.querySelector(
-            //         ".main-modal-title"
-            //     ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
-            //     document.querySelector(
-            //         ".main-modal-body"
-            //     ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
-            //     modal.show();
-            // });
-        } else {
-            card.title += "Programmato: " + c.arrivoProgrammato;
-            card.classList.remove("btn");
-        }
-
-        if (c.prossimaFermata) {
-            card.title += "<br>Prossima fermata: " + c.prossimaFermata;
-        }
-        corseElem.appendChild(card);
-    }
-
-    if (data.length === 0) {
-        const p = document.createElement("p");
-        p.textContent = "Nessuna corsa nei prossimi 90 minuti";
-        p.classList.add("py-2", "mb-0");
-        p.style.textAlign = "center";
-        corseElem.appendChild(p);
-    }
-
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
-    document.getElementById(`bus-corse-card-${cardNum}`).style.display =
-        "block";
-    document.getElementById(`fermata-bus-${cardNum}`).value = fermata;
-
+    document.getElementById(`fermata-bus-${cardNum}`).value = fermataValue;
     document.getElementById(`bus-update-${cardNum}`).textContent =
         _formattaData(new Date());
-
     document.getElementById(`bus-${cardNum}-card`).scrollIntoView();
     _refresh();
+
+    if (busInterval[cardNum]) {
+        clearInterval(busInterval[cardNum]);
+    }
 
     if (nomeFermata) {
         document.getElementById(`nome-corsia-${cardNum}`).textContent =
             nomeFermata;
     }
 
-    if (busInterval[cardNum]) {
-        clearInterval(busInterval[cardNum]);
-    }
     busInterval[cardNum] = setInterval(
-        () => busTper(cardNum, fermata, linee),
-        60000
+        () =>
+            data && nomeFermata
+                ? fermata(nomeFermata)
+                : bus(cardNum, fermata, data, nomeFermata, agency, agency),
+        30000
     );
 }
 
@@ -441,44 +398,53 @@ async function _infoFermata(stopId, cardNum) {
         return;
     }
 
-    console.log(data);
+    // console.log(data);
 
     document.getElementById("nome-corsia-" + cardNum).textContent =
         data.stopName;
 }
 
 function sanCesario() {
-    bus(1, "MO2076");
-    bus(2, "MO3600");
+    bus(1, "MO2076", undefined, undefined, "seta");
+    bus(2, "MO3600", undefined, undefined, "seta");
 }
 
-function bolognaFs() {
-    busTper(1, "19", ["33"], "Per la stazione");
-    busTper(
-        2,
-        "19",
-        [
-            "101",
-            "106",
-            "186",
-            "200",
-            "205",
-            "206",
-            "207",
-            "237",
-            "243",
-            "273",
-            "900",
-            "906",
-            "916",
-            "918"
-        ],
-        "Per l'autostazione"
-    );
-}
+const autoCompleteConfig = [
+    {
+        name: "Seleziona stazione",
+        // inputSource: node.querySelector(".nome-stazione"),
+        inputSource: document.querySelector(".nome-stazione"),
+        targetID: document.querySelector(".nome-stazione"),
+        fetchURL: "/codicestazione/{term}",
+        fetchMap: {
+            id: "id",
+            name: "nome"
+        },
+
+        minLength: 4,
+        maxResults: 10
+    },
+    {
+        name: "Cerca fermata",
+        inputSource: document.querySelector(".nome-fermata"),
+        targetID: document.querySelector(".nome-fermata"),
+        fetchURL: "/fermatadanome?q={term}",
+        fetchMap: {
+            id: "id",
+            name: "nome"
+        },
+
+        minLength: 4,
+        maxResults: 10
+    }
+];
 
 function resultHandlerBS(config, elem) {
-    return tabellone(elem);
+    if (config === "Seleziona stazione") {
+        return tabellone(elem);
+    } else if (config === "Cerca fermata") {
+        return fermata(elem);
+    }
 }
 
 function _clockEmoji(a) {
@@ -546,6 +512,39 @@ async function tabellone(stazione) {
     modal.show();
 
     _refresh();
+}
+
+/** @param {{id: string, nome: string}} stazione */
+async function fermata(fermata) {
+    cercaFermataModal.hide();
+
+    setBusCardLoading(1);
+    document.getElementById(`bus-${1}-card`).scrollIntoView();
+
+    console.log({ fermata });
+
+    try {
+        data = (
+            await axios.get("/busdanome", {
+                params: {
+                    q: fermata.nome
+                }
+            })
+        ).data;
+        if (!data) throw new Error("non worka");
+
+        bus(
+            1,
+            fermata.nome,
+            data,
+            fermata.nome,
+            fermata.id.startsWith("MO") ? "seta" : "tper"
+        );
+
+        console.log("busdanome", data);
+    } catch (err) {
+        console.log(err?.response?.data || err);
+    }
 }
 
 function trenoModal(numTreno, idOrigine) {
@@ -664,21 +663,90 @@ document.getElementById("numero-treno").addEventListener("change", e => {
 });
 document.getElementById("fermata-bus-1").addEventListener("change", e => {
     e.target.value.startsWith("MO")
-        ? bus(1, e.target.value)
-        : busTper(1, e.target.value);
+        ? bus(1, e.target.value, undefined, undefined, "seta")
+        : bus(1, e.target.value, undefined, undefined, "tper");
 });
 document.getElementById("fermata-bus-2").addEventListener("change", e => {
     e.target.value.startsWith("MO")
-        ? bus(2, e.target.value)
-        : busTper(2, e.target.value);
+        ? bus(2, e.target.value, undefined, undefined, "seta")
+        : bus(2, e.target.value, undefined, undefined, "tper");
 });
+
+/**
+ *
+ * @returns {Promise<GeolocationCoordinates>}
+ */
+async function getCurrentPosition() {
+    return new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                return resolve(coords);
+            },
+            err => {
+                return reject(err);
+            },
+            { enableHighAccuracy: true }
+        );
+    });
+}
+
+// document.getElementById("from-gps").addEventListener("click", async e => {
+//     document.getElementById("from-gps").setAttribute("disabled", true);
+//     document.getElementById("findgps-loading").style.display = "block";
+//     document.getElementById("gps-status").textContent = "Ti cerco";
+//     try {
+//         if (!("geolocation" in navigator)) {
+//             throw new Error("GPS non disponibile su questo browser");
+//         }
+//         document.getElementById("gps-status").textContent =
+//             "Dimmi dove sei :))";
+
+//         const coords = await getCurrentPosition();
+//         console.log(coords);
+//         const { latitude, longitude, accuracy } = coords;
+
+//         document.getElementById(
+//             "gps-status"
+//         ).textContent = `👌 sei a ${latitude}, ${longitude} (± ${accuracy}m)`;
+//     } catch (err) {
+//         let html;
+//         if (err instanceof GeolocationPositionError) {
+//             if (err.code === 1) {
+//                 html =
+//                     '<p class="text-center mb-0">mi devi dare i permessi coglione!!</p>' +
+//                     `<img
+//                         src="https://puu.sh/JEXpr/bd48c4d977.png"
+//                         loading="lazy"
+//                         id="gps-howto"
+//                         class="mt-1"
+//                         style="width: 300px"
+//                     />`;
+//             } else if (err.code === 2) {
+//                 html = "hai il dispositivo brocco, non mi da un cazzo";
+//             } else if (err.code === 3) {
+//                 html = "hai il dispositivo ritardato (timeout), mi spiace";
+//             }
+//         } else {
+//             html = "errore ambiguo: " + (err.message || err.toString());
+//         }
+//         document.getElementById("gps-status").innerHTML = html || err;
+//     } finally {
+//         document.getElementById("from-gps").removeAttribute("disabled");
+//         document.getElementById("findgps-loading").style.display = "none";
+//     }
+//     document.getElementById("from-gps").removeAttribute("disabled");
+
+//     e.target.value.startsWith("MO")
+//         ? bus(2, e.target.value, undefined, undefined, "seta")
+//         : bus(2, e.target.value, undefined, undefined, "tper");
+// });
 
 function isBefore(hhmmStr) {
     return dateFns.isBefore(new Date(), _parseHHMM(hhmmStr));
 }
 
 // Bus
-bolognaFs();
+// bolognaFs();
 // if (isBefore("07:42")) {
 //     sanCesario();
 // } else if (isBefore("09:00")) {
@@ -690,6 +758,7 @@ bolognaFs();
 // } else {
 //     sanCesario();
 // }
+sanCesario();
 
 if (isBefore("08:05")) {
     treno(3907, "S05037");
@@ -731,19 +800,4 @@ if (isBefore("08:05")) {
     treno(17400, "S05043");
 }
 
-autocompleteBS([
-    {
-        name: "Seleziona stazione",
-        // inputSource: node.querySelector(".nome-stazione"),
-        inputSource: document.querySelector(".nome-stazione"),
-        targetID: document.querySelector(".nome-stazione"),
-        fetchURL: "/stazione/{term}",
-        fetchMap: {
-            id: "id",
-            name: "nome"
-        },
-
-        minLength: 4,
-        maxResults: 10
-    }
-]);
+autocompleteBS(autoCompleteConfig);

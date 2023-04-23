@@ -1,5 +1,5 @@
 import express from "express";
-import path from "path";
+import path, { join } from "path";
 import dotenv from "dotenv";
 
 import { logger } from "./logger";
@@ -8,8 +8,16 @@ import Seta from "./Seta";
 import { Server } from "socket.io";
 import Position from "./Position";
 import Tper, { TperStop } from "./Tper";
+import StopSearcher from "./StopSearcher";
+import Corsa from "./Seta/Corsa";
+import { AgencyType } from "./AgencyType";
+import moment from "moment";
 
 dotenv.config();
+
+const s = new Seta();
+const t = new Tper();
+const stopSearcher = new StopSearcher(s, t);
 
 const app = express();
 
@@ -41,7 +49,7 @@ app.get("/treno", async (req, res) => {
     return res.json(Trenitalia.formattaOutput(d));
 });
 
-app.get("/stazione/:nome", async (req, res) => {
+app.get("/codicestazione/:nome", async (req, res) => {
     const s = await Trenitalia.stazionePerNome(req.params.nome);
     return s ? res.json(s.slice(0, 10)) : res.sendStatus(500);
 });
@@ -54,12 +62,13 @@ app.get("/tabellone/:id", async (req, res) => {
 app.get("/bus", async (req, res) => {
     const { fermata } = req.query as any;
 
+    logger.debug("Querying stop " + fermata);
+
     if (typeof fermata !== "string") {
         return res.sendStatus(400);
     }
 
     try {
-        const s = new Seta();
         const c = await s.caricaCorse(fermata);
         if (!c) throw new Error("SETA c falsy");
         return res.json(c);
@@ -82,7 +91,6 @@ app.get("/bustper", async (req, res) => {
     }
 
     try {
-        const t = new Tper();
         const c = await t.caricaCorse(fermata, linee);
         if (!c) throw new Error("TPER c falsy");
         return res.json(c);
@@ -100,9 +108,123 @@ app.get("/fermata/:fermata", async (req, res) => {
         return res.sendStatus(400);
     }
 
-    const s = new Seta();
     const f = await s.cercaFermata(fermata);
     return f ? res.json(f) : res.sendStatus(404);
+});
+
+app.get("/fermatadanome", async (req, res) => {
+    const { q } = req.query;
+
+    if (typeof q !== "string") {
+        return res.sendStatus(400);
+    }
+
+    const stops = await stopSearcher.findStop({
+        q,
+        limit: 10,
+        sort: true,
+        removeDuplicatesByName: true
+    });
+
+    logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati`);
+
+    return res.json(
+        stops.map(e => ({
+            nome: e.stopName,
+            id: e.stopId
+        }))
+    );
+});
+
+app.get("/busdanome", async (req, res) => {
+    const { q } = req.query;
+
+    if (typeof q !== "string") {
+        return res.sendStatus(400);
+    }
+
+    const stops = await stopSearcher.findStop({
+        q,
+        limit: 10,
+        sort: true,
+        removeDuplicatesByName: true
+    });
+
+    logger.debug(`Ricerca fermata (per bus) fuzzy ${stops.length} risultati`);
+
+    const corse: (Corsa & { agency: AgencyType })[] = [];
+
+    try {
+        for (const stop of stops) {
+            const c =
+                stop.agency === "seta"
+                    ? await s.caricaCorse(stop.stopId)
+                    : stop.agency === "tper"
+                    ? await t.caricaCorse(stop.stopId)
+                    : null;
+            if (c) {
+                corse.push(...c.map(e => ({ ...e, agency: stop.agency })));
+            } else {
+                logger.warn(
+                    "c falsy in busdanome with stop " + JSON.stringify(stop)
+                );
+            }
+        }
+    } catch (err) {
+        logger.error("/busdanome err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
+
+    corse.sort(
+        (a, b) =>
+            moment(a.arrivoTempoReale || a.arrivoProgrammato, "HH:mm").unix() -
+            moment(b.arrivoTempoReale || b.arrivoProgrammato, "HH:mm").unix()
+    );
+
+    return res.json(corse.slice(0, 10));
+});
+
+app.get("/bus", async (req, res) => {
+    const { fermata } = req.query as any;
+
+    logger.debug("Querying stop " + fermata);
+
+    if (typeof fermata !== "string") {
+        return res.sendStatus(400);
+    }
+
+    try {
+        const c = await s.caricaCorse(fermata);
+        if (!c) throw new Error("SETA c falsy");
+        return res.json(c);
+    } catch (err) {
+        logger.error("/bus err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
+});
+
+app.get("/bustper", async (req, res) => {
+    const { fermata, linee } = req.query as any;
+
+    if (
+        typeof fermata !== "string" ||
+        (linee &&
+            (!Array.isArray(linee) || !linee.every(l => typeof l === "string")))
+    ) {
+        return res.sendStatus(400);
+    }
+
+    try {
+        const c = await t.caricaCorse(fermata, linee);
+        if (!c) throw new Error("TPER c falsy");
+        return res.json(c);
+    } catch (err) {
+        logger.error("/tperbus err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
 });
 
 app.get("/fermatatper/:fermata", async (req, res) => {

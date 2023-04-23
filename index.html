@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="it">
   <head>
+    <!-- Google tag (gtag.js) -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtag/js?id=G-R1FYB4JX6M"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-R1FYB4JX6M");
+    </script>
+
     <meta charset="utf-8" />
 
     <meta name="title" content="SETA al rogo" />
@@ -8,9 +23,9 @@
     <meta name="keywords" content="seta trenitalia 13:38" />
     <meta name="author" content="Bitrey" />
     <meta name="copyright" content="" />
-    <meta http-equiv="Reply-to" content="info@bitrey.it" />
+    <!-- <meta http-equiv="Reply-to" content="info@bitrey.it" />
     <meta http-equiv="content-language" content="IT" />
-    <meta http-equiv="Content-Type" content="text/html; iso-8859-1" />
+    <meta http-equiv="Content-Type" content="text/html; iso-8859-1" /> -->
     <meta name="robots" content="INDEX,FOLLOW" />
     <meta name="creation_Date" content="04/15/2022" />
     <meta name="revisit-after" content="7 days" />
@@ -216,6 +231,75 @@
       </div>
     </div>
 
+    <div class="modal cerca-fermata-modal" tabindex="-1">
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Cerca fermata</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="seleziona-fermata">
+              <!-- <div
+                style="
+                  position: relative;
+                  display: flex;
+                  justify-content: center;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                  "
+                >
+                  <button type="button" class="btn btn-primary" id="from-gps">
+                    Da posizione
+                  </button>
+                  <div
+                    id="findgps-loading"
+                    style="display: none"
+                    class="spinner-border my-1"
+                    role="status"
+                  >
+                    <span class="visually-hidden">Loading...</span>
+                  </div>
+                  <div id="gps-status" class="mt-1"></div>
+                </div>
+              </div>
+              <div style="text-align: center">oppure</div> -->
+              <div class="mb-3" style="position: relative">
+                <label for="nome-fermata" class="form-label">
+                  Inserisci nome fermata
+                </label>
+                <input
+                  type="text"
+                  class="form-control nome-fermata"
+                  placeholder="San Ces ah si"
+                  id="nome-fermata-input"
+                />
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Chiudi
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="modal main-modal" tabindex="-1">
       <div class="modal-dialog modal-xl modal-dialog-centered">
         <div class="modal-content">
@@ -278,6 +362,12 @@
               <li onclick="bus(1, 'MO2576'); bus(2, 'MO6118')">
                 <a class="dropdown-item" href="#">Monte Kosica FS</a>
               </li> -->
+              <li onclick="cercaFermataModal.show()">
+                <a class="dropdown-item" href="#">
+                  Cerca fermata
+                  <span class="badge bg-primary">Nuovo</span>
+                </a>
+              </li>
               <li onclick="stazioneModal.show()">
                 <a class="dropdown-item" href="#">Tabellone</a>
               </li>
@@ -287,20 +377,19 @@
               <li onclick="sanCesario()">
                 <a class="dropdown-item" href="#">San Cesario</a>
               </li>
-              <li
-                onclick="busTper(1, '306', ['36', '37', '187']), 'Da via Irnerio'"
-              >
-                <a class="dropdown-item" href="#">
-                  Bologna Centrale da via Irnerio
-                </a>
-              </li>
-              <li onclick="bolognaFs()">
-                <a class="dropdown-item" href="#">Bologna Centrale dai viali</a>
+              <li onclick="fermata('Irnerio')">
+                <a class="dropdown-item" href="#">Irnerio</a>
               </li>
               <li
                 onclick="tabellone({id: /*'S05081'*/ 'S05016', nome: 'Bologna Zanolini'})"
               >
                 <a class="dropdown-item" href="#">Bologna Zanolini</a>
+              </li>
+              <li onclick="treno(2463)">
+                <a class="dropdown-item" href="#">Treno 13:38 (MO->BO)</a>
+              </li>
+              <li onclick="treno(17415)">
+                <a class="dropdown-item" href="#">Treno 14:38 (MO->BO)</a>
               </li>
               <li onclick="treno(3907)">
                 <a class="dropdown-item" href="#">Treno 8:05</a>
@@ -332,7 +421,7 @@
               <li onclick="treno(3922)">
                 <a class="dropdown-item" href="#">Treno 17:33</a>
               </li>
-              <li onclick="bus(1, 'MO491')">
+              <li onclick="bus(1, 'MO491', undefined, undefined, 'seta')">
                 <a class="dropdown-item" href="#">Castelfranco FS</a>
               </li>
             </ul>
@@ -407,9 +496,9 @@
               </small>
             </p>
 
-            <nav aria-label="breadcrumb">
+            <!-- <nav aria-label="breadcrumb">
               <ol class="breadcrumb" id="fermate"></ol>
-            </nav>
+            </nav> -->
           </div>
           <!-- <p class="card-text">
                             <small class="text-muted">

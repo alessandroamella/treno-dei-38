@@ -8,6 +8,7 @@ import Corsa from "./Corsa";
 import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
 import Stop, { isStop } from "./Stop";
+import Fuse from "fuse.js";
 
 class Seta {
     private static fermate: Stop[] | null = null;
@@ -89,31 +90,68 @@ class Seta {
         return corse;
     }
 
+    private async _cacheStops(): Promise<boolean> {
+        try {
+            const p = path.join(process.cwd(), "./stops/modena.json");
+
+            const rfES6 = util.promisify(fs.readFile);
+            const f = await rfES6(p, { encoding: "utf-8" });
+
+            const obj = JSON.parse(f);
+
+            if (!Array.isArray(obj) || obj.some(s => !isStop(s))) {
+                throw new Error("Invalid stops obj: " + f);
+            }
+
+            logger.debug("Fermate SETA caricate");
+            Seta.fermate = obj;
+            return true;
+        } catch (err) {
+            logger.error("Error while reading stops");
+            logger.error(err);
+            return false;
+        }
+    }
+
     public async cercaFermata(stopId: string): Promise<Stop | null> {
         if (!Seta.fermate) {
-            try {
-                const p = path.join(process.cwd(), "./stops.json");
-
-                const rfES6 = util.promisify(fs.readFile);
-                const f = await rfES6(p, { encoding: "utf-8" });
-
-                const obj = JSON.parse(f);
-
-                if (!Array.isArray(obj) || obj.some(s => !isStop(s))) {
-                    throw new Error("Invalid stops obj: " + f);
-                }
-
-                logger.debug("Fermate SETA caricate");
-                Seta.fermate = obj;
-            } catch (err) {
-                logger.error("Error while reading stops");
-                logger.error(err);
-                return null;
-            }
+            const res = await this._cacheStops();
+            if (!res) return null;
         }
 
         logger.debug("Cerco fermata " + stopId);
-        return Seta.fermate.find(s => s.stopId === stopId) || null;
+        return (Seta.fermate as Stop[]).find(s => s.stopId === stopId) || null;
+    }
+
+    public async cercaFermatePerNome(
+        nome: string
+    ): Promise<Fuse.FuseResult<Stop>[]> {
+        if (!Seta.fermate) {
+            const res = await this._cacheStops();
+            logger.info("Errore fuzzy search SETA return []");
+            if (!res) return [];
+        }
+
+        logger.debug("Cerco fermata fuzzy " + nome);
+
+        const options = {
+            includeScore: true,
+            keys: [
+                {
+                    name: "stopName",
+                    weight: 0.3
+                },
+                {
+                    name: "stopId",
+                    weight: 0.7
+                }
+            ],
+            shouldSort: false
+        };
+
+        const fuse = new Fuse(Seta.fermate as Stop[], options);
+
+        return fuse.search(nome);
     }
 }
 
