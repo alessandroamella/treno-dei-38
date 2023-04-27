@@ -159,9 +159,10 @@ const busInterval = {};
  * @param {string | string[]} fermata
  */
 async function fetchStop(fermata, agency = "seta" | "tper") {
-    const { data } = await axios.get(agency === "seta" ? "bus" : "bustper", {
+    const { data } = await axios.get("bus", {
         params: {
-            fermata
+            q: fermata,
+            agency
         }
     });
     // if (!data) throw new Error("non worka");
@@ -241,6 +242,14 @@ function setTperBus(c, card) {
     }
 }
 
+function getAgencyFromParam(data, agency) {
+    if (!data.agency && agency === "seta") return "seta";
+    else if (!data.agency && agency === "tper") return "tper";
+    else if (data.agency === "seta") return "seta";
+    else if (data.agency === "tper") return "tper";
+    else return null;
+}
+
 /**
  *
  * @param {any} data
@@ -251,6 +260,7 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
     const corseElem = document.getElementById(`bus-corse-${cardNum}`);
     corseElem.innerHTML = "";
 
+    console.log({ data, agency });
     for (const c of data) {
         const dataArrivo = _parseHHMM(
             c.arrivoTempoReale || c.arrivoProgrammato
@@ -260,7 +270,7 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
         card.style.display = "block";
         card.querySelector(".bus-linea").textContent = c.linea;
         card.querySelector(".bus-logo").src =
-            "/img/" + (data.agency || agency) + ".png";
+            "/img/" + getAgencyFromParam(c, agency) + ".png";
         card.querySelector(".bus-destinazione").textContent = c.destinazione;
         card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
             ? "block"
@@ -278,8 +288,8 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
         card.dataset.bsHtml = true;
         card.title = "";
 
-        if (agency === "seta") setSetaBus(c, card);
-        else if (agency === "tper") setTperBus(c, card);
+        if (getAgencyFromParam(c, agency) === "seta") setSetaBus(c, card);
+        else setTperBus(c, card);
 
         if (c.prossimaFermata) {
             card.title += "<br>Prossima fermata: " + c.prossimaFermata;
@@ -303,13 +313,7 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
  * @param {string} [nomeFermata]
  * @param {'seta' | 'tper'} [agency]
  */
-async function bus(
-    cardNum,
-    fermata,
-    data = null,
-    nomeFermata = null,
-    agency = "seta"
-) {
+async function bus(cardNum, fermata, data = null, nomeFermata = null) {
     if (!nomeFermata) await _infoFermata(fermata, cardNum);
 
     if (busInterval[cardNum]) {
@@ -321,7 +325,7 @@ async function bus(
     let fermataValue =
         fermata ||
         document.getElementById(`fermata-bus-${cardNum}`)?.value?.trim() ||
-        "MO6133";
+        "MO2076";
 
     if (!data) {
         try {
@@ -336,9 +340,9 @@ async function bus(
         }
     }
 
-    console.log("bus", data);
+    // console.log("bus", data);
 
-    addCorseToBusCard(data, cardNum, agency);
+    addCorseToBusCard(data, cardNum);
 
     setBusCardLoaded(cardNum);
 
@@ -359,9 +363,10 @@ async function bus(
 
     busInterval[cardNum] = setInterval(
         () =>
-            data && nomeFermata
-                ? fermata(nomeFermata)
-                : bus(cardNum, fermata, data, nomeFermata, agency, agency),
+            // data && nomeFermata
+            //     ? fermata(nomeFermata)
+            //     :
+            bus(cardNum, fermata, data, nomeFermata),
         30000
     );
 }
@@ -385,12 +390,7 @@ async function _infoFermata(stopId, cardNum) {
     /** @type {Fermata} */
     let data;
     try {
-        data = (
-            await axios.get(
-                (stopId.startsWith("MO") ? "/fermata/" : "/fermatatper/") +
-                    stopId
-            )
-        ).data;
+        data = (await axios.get("/fermata/" + stopId)).data;
         if (!data) throw new Error("Stop is null");
     } catch (err) {
         console.log(err?.response?.data || err);
@@ -433,7 +433,6 @@ const autoCompleteConfig = [
             id: "id",
             name: "nome"
         },
-
         minLength: 4,
         maxResults: 10
     }
@@ -443,7 +442,7 @@ function resultHandlerBS(config, elem) {
     if (config === "Seleziona stazione") {
         return tabellone(elem);
     } else if (config === "Cerca fermata") {
-        return fermata(elem);
+        return fermate(elem);
     }
 }
 
@@ -453,6 +452,77 @@ function _clockEmoji(a) {
     return String.fromCharCode(55357, 56655 + (d % 2 ? 23 + d : d) / 2);
 }
 
+/** @param {{id: string, nome: string}} fermata */
+async function fermate(fermata) {
+    cercaFermataModal.hide();
+    modal.show();
+
+    document.querySelector(".nome-stazione").value = "";
+
+    document.querySelector(".main-modal-title").textContent =
+        "Seleziona fermata " + fermata.nome;
+
+    document.querySelector(".main-modal-body").innerHTML = loadingHTML;
+    modal.show();
+
+    console.log(fermata);
+
+    document.querySelector(".main-modal-title").textContent =
+        "Seleziona ID delle fermate di " + fermata.nome;
+    document.querySelector(".main-modal-body").innerHTML = `
+        <div class="seleziona-fermate">
+            ${fermata.id
+                .split(";")
+                .map(
+                    e => `
+                    <div class="form-check" style="overflow: auto;">
+                        <input class="form-check-input fermata-input" type="checkbox" value="${e.toString()}" id="fermata-${e.toString()}">
+                        <label class="form-check-label fermata-input-label" for="fermata-${e.toString()}">
+                            <img
+                                src="/img/${e.split(",")[0]}.png"
+                                alt="TPL agency logo"
+                                class="bus-logo me-1"
+                                style="object-fit: contain; max-width: 1rem"
+                                loading="lazy"
+                            />
+                            <strong>${e.split(",")[1]}</strong>
+                            ${
+                                e.split(",").length > 1
+                                    ? e
+                                          .split(",")
+                                          .slice(2)
+                                          .map(
+                                              f =>
+                                                  `<span class="badge bg-secondary ms-1">${f}</span>`
+                                          )
+                                          .join("")
+                                    : ""
+                            }
+                        </label>
+                    </div>
+                `
+                )
+                .join("")}
+
+                <div class="d-flex mt-2" style="justify-content: center">
+                <button
+                    onclick="
+                        document.getElementById('fermata-bus-1').value = [...document.querySelectorAll('.fermata-input:checked')].map(e => e.value.split(',')[1]).join(',');
+                        bus(1, [...document.querySelectorAll('.fermata-input:checked')].map(e => e.value.split(',')[1]).join(','));
+                        modal.hide();
+                        document.getElementById('bus-1-card').scrollIntoView();
+                    "
+                    type="button"
+                    class="btn btn-primary">
+                        Conferma
+                </button>
+                </div>
+        </div>
+    `;
+    modal.show();
+
+    _refresh();
+}
 /** @param {{id: string, nome: string}} stazione */
 async function tabellone(stazione) {
     stazioneModal.hide();
@@ -533,13 +603,7 @@ async function fermata(fermata) {
         ).data;
         if (!data) throw new Error("non worka");
 
-        bus(
-            1,
-            fermata.nome,
-            data,
-            fermata.nome,
-            fermata.id.startsWith("MO") ? "seta" : "tper"
-        );
+        bus(1, fermata.nome, data, fermata.nome);
 
         console.log("busdanome", data);
     } catch (err) {
@@ -662,14 +726,11 @@ document.getElementById("numero-treno").addEventListener("change", e => {
     treno();
 });
 document.getElementById("fermata-bus-1").addEventListener("change", e => {
-    e.target.value.startsWith("MO")
-        ? bus(1, e.target.value, undefined, undefined, "seta")
-        : bus(1, e.target.value, undefined, undefined, "tper");
+    bus(1, e.target.value);
 });
 document.getElementById("fermata-bus-2").addEventListener("change", e => {
-    e.target.value.startsWith("MO")
-        ? bus(2, e.target.value, undefined, undefined, "seta")
-        : bus(2, e.target.value, undefined, undefined, "tper");
+    e.target.value.startsWith("MO");
+    bus(2, e.target.value);
 });
 
 /**

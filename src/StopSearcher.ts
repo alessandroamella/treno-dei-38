@@ -5,14 +5,31 @@ import Seta from "./Seta";
 import Stop from "./Seta/Stop";
 import Tper, { TperStop } from "./Tper";
 
-interface FindStopArgs {
+interface FindByNameArgs {
     q: string;
     removeDuplicatesByName?: boolean;
     limit?: number;
     sort?: boolean;
 }
 
+interface FindByIdArgs {
+    q: string;
+    agency?: AgencyType;
+}
+
+interface FindMultipleByIdsArgs {
+    q: string[];
+    agency?: AgencyType;
+}
+
 type StopResult = CombinedStop & { agency: AgencyType };
+
+// type SearchedStops = Omit<StopResult, "stopId" | "coordX" | "coordY" | "platform"> & { stopIds: string[] };
+interface SearchedStop {
+    stopName: string;
+    // agency: AgencyType;
+    stops: Omit<StopResult, "stopName">[];
+}
 
 export default class StopSearcher {
     private s: Seta;
@@ -23,12 +40,12 @@ export default class StopSearcher {
         this.t = t;
     }
 
-    public async findStop({
+    public async findByName({
         q,
         limit,
         sort,
         removeDuplicatesByName
-    }: FindStopArgs): Promise<StopResult[]> {
+    }: FindByNameArgs): Promise<SearchedStop[]> {
         const _s = await this.s.cercaFermatePerNome(q);
         const _t = await this.t.cercaFermatePerNome(q);
         let stops: Fuse.FuseResult<StopResult>[] = [
@@ -40,24 +57,71 @@ export default class StopSearcher {
             ))
         ];
 
-        stops.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
-
-        logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati`);
-
+        if (sort) stops.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
         if (limit) stops = stops.slice(0, limit);
 
-        if (removeDuplicatesByName)
-            stops = stops.filter(
-                (v, i, a) =>
-                    a.findIndex(
-                        v2 =>
-                            v2.item.stopName.toLowerCase() ===
-                            v.item.stopName.toLowerCase()
-                    ) === i
-            );
+        logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati:`);
+        logger.debug(JSON.stringify(stops.slice(0, 3), null, 2));
 
-        if (sort) stops.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
+        const _stops: StopResult[] = stops.map(e => e.item);
 
-        return stops.map(s => s.item);
+        const _searchedStops: SearchedStop[] = [];
+
+        for (const stop of _stops) {
+            let found = false;
+            if (removeDuplicatesByName) {
+                const _stop = _searchedStops.find(
+                    e =>
+                        e.stopName.toLowerCase() ===
+                        stop.stopName.toLowerCase() /* && e.agency === stop.agency */
+                );
+                found = !!_stop;
+                if (_stop) {
+                    _stop.stops.push(stop);
+                }
+            }
+            if (!found) {
+                _searchedStops.push({
+                    stopName: stop.stopName,
+                    // agency: stop.agency,
+                    stops: [stop]
+                });
+            }
+        }
+
+        return _searchedStops;
+    }
+
+    public async findById({
+        q,
+        agency
+    }: FindByIdArgs): Promise<StopResult | null> {
+        if (agency === "seta" || !agency) {
+            const _s = await this.s.cercaFermata(q);
+            if (_s) return { ..._s, agency: "seta" };
+        }
+        if (agency === "tper" || !agency) {
+            const _t = await this.t.cercaFermata(q);
+            if (_t) return { ..._t, agency: "tper" };
+        }
+        return null;
+    }
+
+    public async findMultipleById({
+        q,
+        agency
+    }: FindMultipleByIdsArgs): Promise<StopResult[]> {
+        const stops: StopResult[] = [];
+        for (const id of q) {
+            if (agency === "seta" || !agency) {
+                const _s = await this.s.cercaFermata(id);
+                if (_s) stops.push({ ..._s, agency: "seta" });
+            }
+            if (agency === "tper" || !agency) {
+                const _t = await this.t.cercaFermata(id);
+                if (_t) stops.push({ ..._t, agency: "tper" });
+            }
+        }
+        return stops;
     }
 }

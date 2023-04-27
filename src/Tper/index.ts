@@ -5,6 +5,9 @@ import { parseStringPromise } from "xml2js";
 import Corsa from "../Seta/Corsa";
 import Stop from "../Seta/Stop";
 import Fuse from "fuse.js";
+import { writeFileSync } from "fs";
+import { join } from "path";
+import { cwd } from "process";
 
 interface CustomErr {
     msg: string;
@@ -144,7 +147,7 @@ class Tper {
                         arrivoProgrammato: s[1] === "DaSatellite" ? null : s[2],
                         arrivoTempoReale: s[1] === "DaSatellite" ? s[2] : null,
                         busNum: busNum || null,
-                        id: s[0] + busNum,
+                        id: s[0] + (busNum || ""),
                         numPasseggeri: null,
                         postiTotali: null,
                         prossimaFermata: null,
@@ -254,11 +257,11 @@ class Tper {
 
     private async _cacheStops(): Promise<boolean> {
         try {
-            logger.info("Creo cache TPER...");
             if (Tper.isCaching) {
                 logger.info("TPER cache already in progress");
                 return false;
             }
+            logger.info("Creo cache TPER...");
 
             Tper.isCaching = true;
 
@@ -303,6 +306,10 @@ class Tper {
                     } as TperStop)
             );
             Tper.cacheDate = moment();
+            // writeFileSync(
+            //     join(cwd(), "./tper.json"),
+            //     JSON.stringify(Tper.fermate, null, 4)
+            // );
             return true;
         } catch (err) {
             logger.error("Error while reading TPER stops");
@@ -327,7 +334,7 @@ class Tper {
             if (!res) return null;
         }
 
-        logger.debug("Cerco fermata TPER " + stopId);
+        // logger.debug("Cerco fermata TPER " + stopId);
         return (
             (Tper.fermate as TperStop[]).find(s => s.stopId === stopId) || null
         );
@@ -338,8 +345,10 @@ class Tper {
     ): Promise<Fuse.FuseResult<TperStop>[]> {
         if (this._isCacheOutdated()) {
             const res = await this._cacheStops();
-            logger.info("Errore fuzzy search TPER return []");
-            if (!res) return [];
+            if (!res) {
+                logger.error("Errore fuzzy search TPER return []");
+                return [];
+            }
         }
 
         logger.debug("Cerco fermata fuzzy " + nome);

@@ -1,7 +1,7 @@
 import axios from "axios";
 import moment from "moment";
-import path from "path";
-import fs from "fs";
+import path, { join } from "path";
+import fs, { writeFileSync } from "fs";
 import util from "util";
 import { logger } from "../logger";
 import Corsa from "./Corsa";
@@ -9,6 +9,7 @@ import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
 import Stop, { isStop } from "./Stop";
 import Fuse from "fuse.js";
+import { cwd } from "process";
 
 class Seta {
     private static fermate: Stop[] | null = null;
@@ -103,6 +104,10 @@ class Seta {
                 throw new Error("Invalid stops obj: " + f);
             }
 
+            // writeFileSync(
+            //     join(cwd(), "./seta.json"),
+            //     JSON.stringify(obj, null, 4)
+            // );
             logger.debug("Fermate SETA caricate");
             Seta.fermate = obj;
             return true;
@@ -119,7 +124,7 @@ class Seta {
             if (!res) return null;
         }
 
-        logger.debug("Cerco fermata " + stopId);
+        // logger.debug("Cerco fermata " + stopId);
         return (Seta.fermate as Stop[]).find(s => s.stopId === stopId) || null;
     }
 

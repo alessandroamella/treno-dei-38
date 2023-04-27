@@ -10,7 +10,7 @@ import Position from "./Position";
 import Tper, { TperStop } from "./Tper";
 import StopSearcher from "./StopSearcher";
 import Corsa from "./Seta/Corsa";
-import { AgencyType } from "./AgencyType";
+import { AgencyType, isAgencyType } from "./AgencyType";
 import moment from "moment";
 
 dotenv.config();
@@ -59,57 +59,24 @@ app.get("/tabellone/:id", async (req, res) => {
     return t ? res.json(t) : res.sendStatus(500);
 });
 
-app.get("/bus", async (req, res) => {
-    const { fermata } = req.query as any;
-
-    logger.debug("Querying stop " + fermata);
-
-    if (typeof fermata !== "string") {
-        return res.sendStatus(400);
-    }
-
-    try {
-        const c = await s.caricaCorse(fermata);
-        if (!c) throw new Error("SETA c falsy");
-        return res.json(c);
-    } catch (err) {
-        logger.error("/bus err");
-        logger.error(err);
-        return res.sendStatus(500);
-    }
-});
-
-app.get("/bustper", async (req, res) => {
-    const { fermata, linee } = req.query as any;
-
-    if (
-        typeof fermata !== "string" ||
-        (linee &&
-            (!Array.isArray(linee) || !linee.every(l => typeof l === "string")))
-    ) {
-        return res.sendStatus(400);
-    }
-
-    try {
-        const c = await t.caricaCorse(fermata, linee);
-        if (!c) throw new Error("TPER c falsy");
-        return res.json(c);
-    } catch (err) {
-        logger.error("/tperbus err");
-        logger.error(err);
-        return res.sendStatus(500);
-    }
-});
-
 app.get("/fermata/:fermata", async (req, res) => {
     const { fermata } = req.params;
+    const { agency } = req.query;
 
     if (typeof fermata !== "string") {
         return res.sendStatus(400);
     }
 
-    const f = await s.cercaFermata(fermata);
-    return f ? res.json(f) : res.sendStatus(404);
+    const stopsStrArr = fermata.split(",").map(e => e.trim());
+    const stops = await stopSearcher.findMultipleById({
+        q: stopsStrArr,
+        agency: isAgencyType(agency) ? agency : undefined
+    });
+
+    logger.debug("Cercato fermata " + stopsStrArr);
+    logger.debug(JSON.stringify(stops));
+
+    return res.json(stops[0] || null);
 });
 
 app.get("/fermatadanome", async (req, res) => {
@@ -119,38 +86,52 @@ app.get("/fermatadanome", async (req, res) => {
         return res.sendStatus(400);
     }
 
-    const stops = await stopSearcher.findStop({
+    const stops = await stopSearcher.findByName({
         q,
-        limit: 10,
+        limit: 20,
         sort: true,
         removeDuplicatesByName: true
     });
 
-    logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati`);
+    logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati con q=${q}`);
 
     return res.json(
-        stops.map(e => ({
-            nome: e.stopName,
-            id: e.stopId
-        }))
+        <{ nome: string; id: string }[]>stops.map(
+            e =>
+                <{ nome: string; id: string }>{
+                    nome: e.stopName,
+                    id: e.stops
+                        .map(
+                            f =>
+                                `${f.agency},${f.stopId}${
+                                    (f as Omit<TperStop, "stopName">).routes
+                                        ? `,${(
+                                              f as Omit<TperStop, "stopName">
+                                          ).routes.join(",")}`
+                                        : ""
+                                }`
+                        )
+                        .join(";")
+                }
+        )
     );
 });
 
-app.get("/busdanome", async (req, res) => {
-    const { q } = req.query;
+app.get("/bus", async (req, res) => {
+    const { q, agency } = req.query;
 
     if (typeof q !== "string") {
         return res.sendStatus(400);
     }
 
-    const stops = await stopSearcher.findStop({
-        q,
-        limit: 10,
-        sort: true,
-        removeDuplicatesByName: true
-    });
+    const stopsStrArr = q.split(",").map(e => e.trim());
 
-    logger.debug(`Ricerca fermata (per bus) fuzzy ${stops.length} risultati`);
+    logger.debug("Cerco fermate: " + stopsStrArr);
+
+    const stops = await stopSearcher.findMultipleById({
+        q: stopsStrArr,
+        agency: isAgencyType(agency) ? agency : undefined
+    });
 
     const corse: (Corsa & { agency: AgencyType })[] = [];
 
@@ -171,7 +152,7 @@ app.get("/busdanome", async (req, res) => {
             }
         }
     } catch (err) {
-        logger.error("/busdanome err");
+        logger.error("/bus err");
         logger.error(err);
         return res.sendStatus(500);
     }
@@ -183,60 +164,6 @@ app.get("/busdanome", async (req, res) => {
     );
 
     return res.json(corse.slice(0, 10));
-});
-
-app.get("/bus", async (req, res) => {
-    const { fermata } = req.query as any;
-
-    logger.debug("Querying stop " + fermata);
-
-    if (typeof fermata !== "string") {
-        return res.sendStatus(400);
-    }
-
-    try {
-        const c = await s.caricaCorse(fermata);
-        if (!c) throw new Error("SETA c falsy");
-        return res.json(c);
-    } catch (err) {
-        logger.error("/bus err");
-        logger.error(err);
-        return res.sendStatus(500);
-    }
-});
-
-app.get("/bustper", async (req, res) => {
-    const { fermata, linee } = req.query as any;
-
-    if (
-        typeof fermata !== "string" ||
-        (linee &&
-            (!Array.isArray(linee) || !linee.every(l => typeof l === "string")))
-    ) {
-        return res.sendStatus(400);
-    }
-
-    try {
-        const c = await t.caricaCorse(fermata, linee);
-        if (!c) throw new Error("TPER c falsy");
-        return res.json(c);
-    } catch (err) {
-        logger.error("/tperbus err");
-        logger.error(err);
-        return res.sendStatus(500);
-    }
-});
-
-app.get("/fermatatper/:fermata", async (req, res) => {
-    const { fermata } = req.params;
-
-    if (typeof fermata !== "string") {
-        return res.sendStatus(400);
-    }
-
-    const t = new Tper();
-    const f = await t.cercaFermata(fermata);
-    return f ? res.json(f) : res.sendStatus(404);
 });
 
 app.get("/geolocation/:password", (req, res) => {
