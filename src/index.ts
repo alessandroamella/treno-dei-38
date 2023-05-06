@@ -14,6 +14,8 @@ import { AgencyType, isAgencyType } from "./AgencyType";
 import moment from "moment";
 import News from "./Seta/News";
 
+import "dotenv/config";
+
 dotenv.config();
 
 const s = new Seta();
