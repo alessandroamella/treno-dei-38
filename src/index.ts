@@ -12,6 +12,7 @@ import StopSearcher from "./StopSearcher";
 import Corsa from "./Seta/Corsa";
 import { AgencyType, isAgencyType } from "./AgencyType";
 import moment from "moment";
+import News from "./Seta/News";
 
 dotenv.config();
 
@@ -164,6 +165,39 @@ app.get("/bus", async (req, res) => {
     );
 
     return res.json(corse.slice(0, 10));
+});
+
+app.get("/news", async (req, res) => {
+    const { agency, limit } = req.query;
+
+    const news: News[] = [];
+
+    try {
+        if (!agency || (isAgencyType(agency) && agency === "seta")) {
+            const _s = await s.getNews();
+            if (_s) news.push(..._s);
+            else throw new Error("SETA news null");
+        }
+        if (!agency || (isAgencyType(agency) && agency === "tper")) {
+            const _t = await t.getNews();
+            if (_t) news.push(..._t);
+        }
+
+        news.sort((a, b) => b.date.valueOf() - a.date.valueOf());
+
+        return res.json(
+            news.slice(
+                0,
+                typeof limit === "string" && /^\+?\d+$/.test(limit)
+                    ? Number(limit)
+                    : 25
+            )
+        );
+    } catch (err) {
+        logger.error("/news err");
+        logger.error(err);
+        return res.sendStatus(500);
+    }
 });
 
 app.get("/geolocation/:password", (req, res) => {

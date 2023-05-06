@@ -103,6 +103,10 @@
         align-items: center;
         /* overflow: auto; */
       }
+
+      .list-group-item {
+        overflow-x: auto;
+      }
     </style>
 
     <link rel="apple-touch-icon" sizes="57x57" href="/apple-icon-57x57.png" />
@@ -350,7 +354,26 @@
       </small>
 
       <div class="my-3">
-        <div class="d-flex justify-content-center">
+        <!-- News -->
+        <div class="container">
+          <h2>Ultime notizie</h2>
+
+          <div id="ultime-notizie">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <!-- <ul class="list-group">
+            <li
+              class="list-group-item d-flex justify-content-between align-items-center"
+            >
+              News Title
+              <a href="#" class="btn btn-primary">Read more</a>
+            </li>
+          </ul> -->
+        </div>
+
+        <div class="mt-3 d-flex justify-content-center">
           <div class="dropdown">
             <button
               class="btn btn-primary dropdown-toggle"
@@ -360,7 +383,6 @@
               aria-expanded="false"
             >
               Funzioni veloci
-              <span class="badge bg-light text-dark">Nuovo</span>
             </button>
             <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
               <!-- <li onclick="bus(1, 'MO6133'); bus(2, 'MO6134')">
@@ -370,10 +392,7 @@
                 <a class="dropdown-item" href="#">Monte Kosica FS</a>
               </li> -->
               <li onclick="cercaFermataModal.show()">
-                <a class="dropdown-item" href="#">
-                  Cerca fermata
-                  <span class="badge bg-primary">Nuovo</span>
-                </a>
+                <a class="dropdown-item" href="#">Cerca fermata</a>
               </li>
               <li onclick="stazioneModal.show()">
                 <a class="dropdown-item" href="#">Tabellone</a>

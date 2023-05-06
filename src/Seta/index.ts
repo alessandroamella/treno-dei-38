@@ -1,5 +1,5 @@
 import axios from "axios";
-import moment from "moment";
+import moment, { Moment } from "moment";
 import path, { join } from "path";
 import fs, { writeFileSync } from "fs";
 import util from "util";
@@ -9,10 +9,16 @@ import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
 import Stop, { isStop } from "./Stop";
 import Fuse from "fuse.js";
-import { cwd } from "process";
+import * as cheerio from "cheerio";
+import News from "./News";
+import { Agent } from "https";
 
 class Seta {
     private static fermate: Stop[] | null = null;
+
+    private static newsUrl = "https://www.setaweb.it/mo/news";
+    private static newsCache: News[] | null = null;
+    private static newsCacheDate: Moment | null = null;
 
     public async caricaCorse(stopId: string): Promise<Corsa[] | null> {
         let data: RawData | RawError;
@@ -157,6 +163,61 @@ class Seta {
         const fuse = new Fuse(Seta.fermate as Stop[], options);
 
         return fuse.search(nome);
+    }
+
+    public async getNews(): Promise<News[] | null> {
+        if (
+            !Seta.newsCache ||
+            !Seta.newsCacheDate ||
+            moment().diff(Seta.newsCacheDate, "minutes") > 10
+        ) {
+            logger.info("Carico news SETA");
+            try {
+                // SETA fatta sempre bene, certificato non valido
+                const instance = axios.create({
+                    httpsAgent: new Agent({
+                        rejectUnauthorized: false
+                    })
+                });
+
+                const { data } = await instance.get(Seta.newsUrl);
+                const $ = cheerio.load(data);
+                const newsContainers = $("div.news-container");
+
+                const news: News[] = [];
+
+                newsContainers.each((i, el) => {
+                    const title = $(el).find(".title").text();
+                    const _date = $(el).find(".date-title").text();
+                    const date = moment(_date, "DD.MM.YYYY");
+                    const type = $(el).find(".bacini-title").text();
+                    const _url = $(el).closest("a").attr("href");
+                    const url =
+                        (_url &&
+                            new URL(
+                                _url,
+                                new URL(Seta.newsUrl).origin
+                            ).toString()) ||
+                        undefined;
+
+                    news.push({ title, agency: "seta", date, type, url });
+                });
+
+                Seta.newsCache = news;
+                Seta.newsCacheDate = moment();
+
+                logger.info("SETA fetched " + news.length + " news");
+
+                return news;
+            } catch (err) {
+                logger.error("Error while fetching SETA news");
+                logger.error(err);
+                return null;
+            }
+        } else {
+            logger.debug("News SETA da cache");
+            return Seta.newsCache;
+        }
     }
 }
 

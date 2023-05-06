@@ -5,9 +5,9 @@ import { parseStringPromise } from "xml2js";
 import Corsa from "../Seta/Corsa";
 import Stop from "../Seta/Stop";
 import Fuse from "fuse.js";
-import { writeFileSync } from "fs";
-import { join } from "path";
-import { cwd } from "process";
+import News from "../Seta/News";
+import { fetchUrlWithCurl, rssParser } from "./News";
+import { Item } from "rss-parser";
 
 interface CustomErr {
     msg: string;
@@ -41,9 +41,22 @@ function isFnErr(err: unknown): err is FnErr {
 }
 
 class Tper {
-    private static fermate: TperStop[] | null = null;
+    private static _fermate: TperStop[] | null = null;
     private static isCaching: boolean = false;
     private static cacheDate: Moment | null = null;
+
+    private static newsUrl = "https://www.tper.it/taxonomy/term/33/all/rss.xml";
+    private static newsCache: News[] | null = null;
+    private static newsCacheDate: Moment | null = null;
+
+    private static set fermate(fermate: TperStop[] | null) {
+        Tper._fermate = fermate;
+    }
+
+    private static get fermate(): TperStop[] | null {
+        if (Tper._isCacheOutdated()) Tper._cacheStops();
+        return Tper._fermate;
+    }
 
     private static async _getTripsForRoute(
         stopId: string,
@@ -255,7 +268,7 @@ class Tper {
         return corse;
     }
 
-    private async _cacheStops(): Promise<boolean> {
+    private static async _cacheStops(): Promise<boolean> {
         try {
             if (Tper.isCaching) {
                 logger.info("TPER cache already in progress");
@@ -268,6 +281,8 @@ class Tper {
             const { data } = await axios.post(
                 "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate"
             );
+
+            logger.info("TPER cache loaded, parsing...");
 
             const parsed = await parseStringPromise(data);
 
@@ -306,35 +321,36 @@ class Tper {
                     } as TperStop)
             );
             Tper.cacheDate = moment();
+            logger.info("TPER cache created at " + Tper.cacheDate.format());
             // writeFileSync(
             //     join(cwd(), "./tper.json"),
             //     JSON.stringify(Tper.fermate, null, 4)
             // );
+            Tper.isCaching = false;
             return true;
         } catch (err) {
             logger.error("Error while reading TPER stops");
             logger.error(err);
-            return false;
-        } finally {
             Tper.isCaching = false;
+            return false;
         }
     }
 
-    private _isCacheOutdated(): boolean {
+    private static _isCacheOutdated(): boolean {
         return (
-            !Tper.fermate ||
+            !Tper._fermate ||
             !Tper.cacheDate ||
             moment().diff(Tper.cacheDate, "days") > 3
         );
     }
 
     public async cercaFermata(stopId: string): Promise<TperStop | null> {
-        if (this._isCacheOutdated()) {
-            const res = await this._cacheStops();
+        // logger.debug("Cerco fermata TPER " + stopId);
+        if (Tper._isCacheOutdated()) {
+            const res = await Tper._cacheStops();
             if (!res) return null;
         }
 
-        // logger.debug("Cerco fermata TPER " + stopId);
         return (
             (Tper.fermate as TperStop[]).find(s => s.stopId === stopId) || null
         );
@@ -343,8 +359,8 @@ class Tper {
     public async cercaFermatePerNome(
         nome: string
     ): Promise<Fuse.FuseResult<TperStop>[]> {
-        if (this._isCacheOutdated()) {
-            const res = await this._cacheStops();
+        if (Tper._isCacheOutdated()) {
+            const res = await Tper._cacheStops();
             if (!res) {
                 logger.error("Errore fuzzy search TPER return []");
                 return [];
@@ -371,6 +387,59 @@ class Tper {
         const fuse = new Fuse(Tper.fermate as TperStop[], options);
 
         return fuse.search(nome);
+    }
+
+    private static _mapToNews(items: Item[]): News[] {
+        const newsList: News[] = [];
+
+        items.forEach(item => {
+            const news: News = {
+                title: item.title || "-- DEBUG --",
+                agency: "tper",
+                date: moment(item.isoDate),
+                type: item.categories?.[0] || "Uncategorized",
+                url: item.link
+            };
+            newsList.push(news);
+        });
+
+        return newsList;
+    }
+
+    public async getNews(): Promise<News[] | null> {
+        if (
+            !Tper.newsCache ||
+            !Tper.newsCacheDate ||
+            moment().diff(Tper.newsCacheDate, "minutes") > 10
+        ) {
+            logger.info("Carico news TPER");
+            try {
+                // TPER fatta sempre bene, certificato non valido
+                const data = await fetchUrlWithCurl(Tper.newsUrl);
+                console.log(data);
+                // DEBUG
+
+                if (!data) return null;
+
+                const feed = await rssParser.parseString(data);
+
+                const news = Tper._mapToNews(feed.items);
+
+                Tper.newsCache = news;
+                Tper.newsCacheDate = moment();
+
+                logger.info("TPER fetched " + news.length + " news");
+
+                return news;
+            } catch (err) {
+                logger.error("Error while reading TPER news");
+                logger.error(err);
+                return null;
+            }
+        } else {
+            logger.debug("News TPER da cache");
+            return Tper.newsCache;
+        }
     }
 }
 

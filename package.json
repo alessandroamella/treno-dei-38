@@ -12,23 +12,26 @@
     "author": "Bitrey",
     "license": "ISC",
     "devDependencies": {
-        "@types/express": "^4.17.13",
-        "@types/node": "^17.0.23",
+        "@types/express": "^4.17.17",
+        "@types/node": "^20.1.0",
         "@types/xml2js": "^0.4.11",
-        "nodemon": "^2.0.15",
-        "rimraf": "^3.0.2",
-        "ts-node": "^10.7.0",
-        "typescript": "^4.6.3"
+        "nodemon": "^2.0.22",
+        "rimraf": "^5.0.0",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.0.4"
     },
     "dependencies": {
-        "axios": "^0.26.1",
-        "dotenv": "^16.0.0",
-        "express": "^4.17.3",
+        "axios": "^1.4.0",
+        "cheerio": "^1.0.0-rc.12",
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2",
         "fuse.js": "^6.6.2",
-        "moment": "^2.29.2",
-        "moment-timezone": "^0.5.38",
-        "socket.io": "^4.4.1",
-        "winston": "^3.7.2",
+        "moment": "^2.29.4",
+        "moment-timezone": "^0.5.43",
+        "request": "^2.88.2",
+        "rss-parser": "^3.13.0",
+        "socket.io": "^4.6.1",
+        "winston": "^3.8.2",
         "xml2js": "^0.5.0"
     }
 }
