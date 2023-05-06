@@ -416,7 +416,6 @@ class Tper {
             try {
                 // TPER fatta sempre bene, certificato non valido
                 const data = await fetchUrlWithCurl(Tper.newsUrl);
-                console.log(data);
                 // DEBUG
 
                 if (!data) return null;
