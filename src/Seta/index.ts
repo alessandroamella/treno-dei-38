@@ -3,15 +3,15 @@ import moment, { Moment } from "moment";
 import path, { join } from "path";
 import fs, { writeFileSync } from "fs";
 import util from "util";
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 import Corsa from "./Corsa";
 import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
 import Stop, { isStop } from "./Stop";
 import Fuse from "fuse.js";
 import * as cheerio from "cheerio";
-import News from "./News";
 import { Agent } from "https";
+import News from "../interfaces/News";
 
 class Seta {
     private static fermate: Stop[] | null = null;

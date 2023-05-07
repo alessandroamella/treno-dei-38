@@ -1,9 +1,8 @@
-import Parser from "rss-parser";
-import { spawn } from "child_process";
+import Parser, { Item } from "rss-parser";
 
-type CustomFeed = {};
+type TperNewsFeed = {};
 
-type CustomItem = {
+export interface TperNewsItem extends Omit<Item, "categories"> {
     creator: string;
     title: string;
     link: string;
@@ -15,41 +14,11 @@ type CustomItem = {
         };
     }[];
     content: string;
-};
+}
 
-export const rssParser: Parser<CustomFeed, CustomItem> = new Parser({
+export const rssParser: Parser<TperNewsFeed, TperNewsItem> = new Parser({
     customFields: {
         feed: [],
-        item: [
-            ["creator", "creator"],
-            ["title", "title"],
-            ["link", "link"],
-            ["pubDate", "pubDate"],
-            ["categories", "category", { keepArray: true }],
-            ["content", "content"]
-        ]
+        item: ["creator", "title", "link", "pubDate", "categories", "content"]
     }
 });
-
-export async function fetchUrlWithCurl(url: string): Promise<string | null> {
-    return new Promise(resolve => {
-        const curl = spawn("curl", [url]);
-        let output = "";
-
-        curl.stdout.on("data", data => {
-            output += data;
-        });
-
-        curl.on("close", code => {
-            if (code === 0) {
-                resolve(output);
-            } else {
-                resolve(null);
-            }
-        });
-
-        curl.on("error", () => {
-            resolve(null);
-        });
-    });
-}

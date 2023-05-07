@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { AgencyType, CombinedStop } from "./AgencyType";
-import { logger } from "./logger";
+import { logger } from "./utils/logger";
 import Seta from "./Seta";
 import Stop from "./Seta/Stop";
 import Tper, { TperStop } from "./Tper";

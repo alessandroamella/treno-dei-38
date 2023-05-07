@@ -1,9 +1,12 @@
 import axios from "axios";
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 import OutputFormattato from "./OutputFormattato";
 import StatoTreno from "./StatoTreno";
 import Stazione from "./Stazione";
 import TrenoTabellone from "./TrenoTabellone";
+import moment, { Moment } from "moment";
+import { TrenitaliaNewsItem, rssParser } from "./News";
+import News from "../interfaces/News";
 
 class Trenitalia {
     readonly numeroTreno: string;
@@ -11,6 +14,11 @@ class Trenitalia {
 
     private stazionePartenza: string | null = null;
     private dataPartezaMs: string | null = null;
+
+    private static newsUrl =
+        "https://www.rfi.it/it/news-e-media/infomobilita.rss.updates.emilia_romagna.xml";
+    private static newsCache: News[] | null = null;
+    private static newsCacheDate: Moment | null = null;
 
     constructor(numeroTreno: string, idOrigine?: string) {
         this.numeroTreno = numeroTreno;
@@ -161,6 +169,55 @@ class Trenitalia {
 
             return null;
         }
+    }
+
+    public static async getNews(): Promise<News[] | null> {
+        if (
+            !Trenitalia.newsCache ||
+            !Trenitalia.newsCacheDate ||
+            moment().diff(Trenitalia.newsCacheDate, "minutes") > 10
+        ) {
+            logger.info("Carico news Trenitalia");
+            try {
+                // Trenitalia fatta sempre bene, certificato non valido
+                const { data } = await axios.get(Trenitalia.newsUrl);
+                // DEBUG
+
+                if (!data) return null;
+
+                const feed = await rssParser.parseString(data);
+
+                const news = Trenitalia._mapToNews(feed.items);
+
+                Trenitalia.newsCache = news;
+                Trenitalia.newsCacheDate = moment();
+
+                logger.info("Trenitalia fetched " + news.length + " news");
+
+                return news;
+            } catch (err) {
+                logger.error("Error while reading Trenitalia news");
+                logger.error(err);
+                return null;
+            }
+        } else {
+            logger.debug("News Trenitalia da cache");
+            return Trenitalia.newsCache;
+        }
+    }
+
+    private static _mapToNews(items: TrenitaliaNewsItem[]): News[] {
+        const news: News[] = items
+            .filter(item => item.title !== undefined)
+            .map(item => ({
+                title: item.title!,
+                agency: "trenitalia",
+                date: moment(item.pubDate),
+                type: "Infomobilità",
+                url: item.link
+            }));
+
+        return news;
     }
 }
 

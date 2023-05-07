@@ -2,7 +2,7 @@ import express from "express";
 import path, { join } from "path";
 import dotenv from "dotenv";
 
-import { logger } from "./logger";
+import { logger } from "./utils/logger";
 import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
 import { Server } from "socket.io";
@@ -10,11 +10,11 @@ import Position from "./Position";
 import Tper, { TperStop } from "./Tper";
 import StopSearcher from "./StopSearcher";
 import Corsa from "./Seta/Corsa";
-import { AgencyType, isAgencyType } from "./AgencyType";
+import { AgencyType, isAgencyType, isAgencyTypeCombined } from "./AgencyType";
 import moment from "moment";
-import News from "./Seta/News";
 
 import "dotenv/config";
+import News from "./interfaces/News";
 
 dotenv.config();
 
@@ -175,14 +175,21 @@ app.get("/news", async (req, res) => {
     const news: News[] = [];
 
     try {
-        if (!agency || (isAgencyType(agency) && agency === "seta")) {
+        if (!agency || (isAgencyTypeCombined(agency) && agency === "seta")) {
             const _s = await s.getNews();
             if (_s) news.push(..._s);
             else throw new Error("SETA news null");
         }
-        if (!agency || (isAgencyType(agency) && agency === "tper")) {
+        if (!agency || (isAgencyTypeCombined(agency) && agency === "tper")) {
             const _t = await t.getNews();
             if (_t) news.push(..._t);
+        }
+        if (
+            !agency ||
+            (isAgencyTypeCombined(agency) && agency === "trenitalia")
+        ) {
+            const _tt = await Trenitalia.getNews();
+            if (_tt) news.push(..._tt);
         }
 
         news.sort((a, b) => b.date.valueOf() - a.date.valueOf());
@@ -192,7 +199,7 @@ app.get("/news", async (req, res) => {
                 0,
                 typeof limit === "string" && /^\+?\d+$/.test(limit)
                     ? Number(limit)
-                    : 25
+                    : 32
             )
         );
     } catch (err) {

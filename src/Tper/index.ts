@@ -1,13 +1,14 @@
 import axios from "axios";
 import moment, { Moment } from "moment-timezone";
-import { logger } from "../logger";
+import { logger } from "../utils/logger";
 import { parseStringPromise } from "xml2js";
 import Corsa from "../Seta/Corsa";
 import Stop from "../Seta/Stop";
 import Fuse from "fuse.js";
-import News from "../Seta/News";
-import { fetchUrlWithCurl, rssParser } from "./News";
+import { TperNewsItem, rssParser } from "./News";
 import { Item } from "rss-parser";
+import { fetchUrlWithCurl } from "../utils/curlFetch";
+import News from "../interfaces/News";
 
 interface CustomErr {
     msg: string;
@@ -389,15 +390,15 @@ class Tper {
         return fuse.search(nome);
     }
 
-    private static _mapToNews(items: Item[]): News[] {
+    private static _mapToNews(items: TperNewsItem[]): News[] {
         const newsList: News[] = [];
 
         items.forEach(item => {
             const news: News = {
-                title: item.title || "-- DEBUG --",
+                title: item.title,
                 agency: "tper",
                 date: moment(item.isoDate),
-                type: item.categories?.[0] || "Uncategorized",
+                type: item.categories?.[0]._ || "Uncategorized",
                 url: item.link
             };
             newsList.push(news);
