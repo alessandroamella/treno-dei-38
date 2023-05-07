@@ -830,129 +830,6 @@ async function _fetchNews() {
         return null;
     }
 }
-//     }
-// }
-
-// async function notizie() {
-//     const news = await _fetchNews();
-//     if (!news) {
-//         document.getElementById("ultime-notizie").innerHTML =
-//             "😔 Errore nel caricamento delle notizie";
-//         return;
-//     }
-
-//     document.getElementById("ultime-notizie").innerHTML = "";
-
-//     console.log("news", news);
-
-//     const itemsPerPage = 5;
-//     const newsList = document.getElementById("ultime-notizie");
-//     const newsCount = news.length;
-
-//     // create pagination element
-//     const pagination = document.createElement("nav");
-//     pagination.setAttribute("aria-label", "Page navigation");
-
-//     const paginationList = document.createElement("ul");
-//     paginationList.classList.add(
-//         "pagination",
-//         "justify-content-center",
-//         "mt-1"
-//     );
-
-//     // calculate number of pages
-//     const pageCount = Math.ceil(newsCount / itemsPerPage);
-
-//     // create pagination items
-//     for (let i = 1; i <= pageCount; i++) {
-//         const li = document.createElement("li");
-//         li.classList.add("page-item");
-
-//         const a = document.createElement("a");
-//         a.classList.add("page-link");
-//         a.href = "#";
-//         a.textContent = i;
-
-//         a.addEventListener("click", event => {
-//             event.preventDefault();
-//             showPage(i);
-//         });
-
-//         li.appendChild(a);
-//         paginationList.appendChild(li);
-//     }
-
-//     pagination.appendChild(paginationList);
-//     newsList.parentNode.insertBefore(pagination, newsList.nextSibling);
-
-//     // show initial page
-//     showPage(1);
-
-//     function showPage(page) {
-//         const startIndex = (page - 1) * itemsPerPage;
-//         const endIndex = startIndex + itemsPerPage;
-
-//         const ul = document.createElement("ul");
-//         ul.classList.add("list-group");
-
-//         for (let i = startIndex; i < endIndex && i < newsCount; i++) {
-//             const n = news[i];
-//             const li = document.createElement("li");
-
-//             li.classList.add(
-//                 "list-group-item",
-//                 "d-flex",
-//                 "justify-content-between",
-//                 "align-items-center"
-//             );
-
-//             const div = document.createElement("div");
-//             div.classList.add("d-flex", "align-items-center", "gap-1");
-
-//             const img = document.createElement("img");
-//             img.src = "/img/" + n.agency + ".png";
-//             img.alt = n.agency + " agency logo";
-//             img.classList.add("bus-logo");
-//             img.style.objectFit = "contain";
-//             img.style.maxWidth = "1rem";
-//             img.loading = "lazy";
-
-//             div.appendChild(img);
-
-//             // create span with news date
-//             const span = document.createElement("span");
-//             span.classList.add("badge", "bg-secondary", "rounded-pill");
-//             span.textContent = dateFns.format(n.date, "DD/MM/YYYY");
-//             div.appendChild(span);
-
-//             const a = document.createElement("a");
-//             a.textContent = n.title;
-//             a.classList.add("me-1");
-
-//             if (n.url) {
-//                 a.href = n.url;
-//                 a.setAttribute("rel", "noopener noreferrer");
-//                 a.setAttribute("target", "_blank");
-//                 // a.classList.add("btn", "btn-primary", "ms-2");
-//                 // a.textContent = "Leggi";
-//                 // li.appendChild(a);
-//             }
-//             div.appendChild(a);
-
-//             li.appendChild(div);
-
-//             ul.appendChild(li);
-//         }
-
-//         // remove existing list if any
-//         const existingList = newsList.querySelector("ul");
-//         if (existingList) {
-//             newsList.removeChild(existingList);
-//         }
-
-//         newsList.appendChild(ul);
-//     }
-// }
 
 async function notizie() {
     const news = await _fetchNews();
@@ -1048,7 +925,7 @@ async function notizie() {
             );
 
             const img = document.createElement("img");
-            img.src = "/img/" + n.agency + ".png";
+            img.src = "/img/" + n.agency.replace(/\W/g, "") + ".png";
             img.alt = n.agency + " agency logo";
             img.classList.add("bus-logo");
             img.style.width = "2rem";
@@ -1128,8 +1005,11 @@ async function notizie() {
             const cardText = document.createElement("p");
             cardText.classList.add("card-text", "text-secondary", "mb-1");
             cardText.textContent =
-                dateFns.format(n.date, "DD/MM/YYYY") + " - " + n.agency;
-            cardText.style.textTransform = "capitalize";
+                // dateFns.format(n.date, "DD/MM/YYYY") + " - " + n.agency;
+                dateFns.format(n.date, "DD/MM/YYYY") +
+                " - " +
+                new URL(n.url).hostname.replace("www.", "");
+            // cardText.style.textTransform = "uppercase";
             cardBody.appendChild(cardText);
 
             const cardLink = document.createElement("a");

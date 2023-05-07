@@ -1,9 +1,9 @@
 import { Moment } from "moment";
-import { AgencyTypeCombined } from "../AgencyType";
+import { NewsType } from "./AgencyType";
 
 interface News {
     title: string;
-    agency: AgencyTypeCombined;
+    agency: NewsType;
     date: Moment;
     type: string;
     url?: string;

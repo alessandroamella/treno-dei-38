@@ -3,7 +3,7 @@ import { logger } from "../utils/logger";
 import OutputFormattato from "./OutputFormattato";
 import StatoTreno from "./StatoTreno";
 import Stazione from "./Stazione";
-import TrenoTabellone from "./TrenoTabellone";
+import TrenoTabellone from "../interfaces/TrenoTabellone";
 import moment, { Moment } from "moment";
 import { TrenitaliaNewsItem, rssParser } from "./News";
 import News from "../interfaces/News";

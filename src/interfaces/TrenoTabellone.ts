@@ -1,4 +1,4 @@
-import OutputFormattato from "./OutputFormattato";
+import OutputFormattato from "../Trenitalia/OutputFormattato";
 
 type _TrenoTabellone = Omit<
     OutputFormattato,
