@@ -968,9 +968,7 @@ async function notizie() {
             popoverContent.appendChild(popoverBtn);
 
             // const popover =
-            new bootstrap.Popover(cardBody, {
-                container: "body"
-            });
+            refreshPopovers();
 
             // add the popover to the card body
             cardBody.setAttribute("data-bs-toggle", "popover");
@@ -1091,9 +1089,11 @@ if (isBefore("08:05")) {
 
 autocompleteBS(autoCompleteConfig);
 
-const popoverTriggerList = document.querySelectorAll(
-    '[data-bs-toggle="popover"]'
-);
-const popoverList = [...popoverTriggerList].map(
-    popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl)
-);
+function refreshPopovers() {
+    const popoverTriggerList = document.querySelectorAll(
+        '[data-bs-toggle="popover"]'
+    );
+    const popoverList = [...popoverTriggerList].map(
+        popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl)
+    );
+}

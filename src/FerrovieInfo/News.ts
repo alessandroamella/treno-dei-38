@@ -1,4 +1,4 @@
-import Parser, { Output, Item } from "rss-parser";
+import Parser, { Item } from "rss-parser";
 
 type FerrovieNewsFeed = {};
 

@@ -16,6 +16,7 @@ import moment from "moment";
 import "dotenv/config";
 import News from "./interfaces/News";
 import FerrovieInfo from "./FerrovieInfo";
+import SanCesario from "./SanCesario";
 
 dotenv.config();
 
@@ -193,6 +194,10 @@ app.get("/news", async (req, res) => {
             const _f = await FerrovieInfo.getNews();
             if (_f) news.push(..._f);
         }
+        if (!agency || (isNewsType(agency) && agency === "sancesario")) {
+            const _sc = await SanCesario.getNews();
+            if (_sc) news.push(..._sc);
+        }
 
         news.sort((a, b) => b.date.valueOf() - a.date.valueOf());
 
@@ -201,7 +206,7 @@ app.get("/news", async (req, res) => {
                 0,
                 typeof limit === "string" && /^\+?\d+$/.test(limit)
                     ? Number(limit)
-                    : 48
+                    : 60
             )
         );
     } catch (err) {
