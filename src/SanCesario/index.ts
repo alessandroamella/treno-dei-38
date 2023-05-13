@@ -20,7 +20,6 @@ class SanCesario {
             try {
                 // SanCesario fatta sempre bene, certificato non valido
                 const { data } = await axios.get(SanCesario.newsUrl);
-                // DEBUG
 
                 if (!data) return null;
 

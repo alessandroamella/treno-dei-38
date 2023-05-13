@@ -181,7 +181,7 @@ class Trenitalia {
             try {
                 // Trenitalia fatta sempre bene, certificato non valido
                 const { data } = await axios.get(Trenitalia.newsUrl);
-                // DEBUG
+                //
 
                 if (!data) return null;
 

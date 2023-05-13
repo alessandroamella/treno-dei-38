@@ -102,7 +102,7 @@ class Tper {
     private static newsCacheDate: Moment | null = null;
 
     // private static gtfsCache: GTFS | null = null;
-    private static gtfsCacheDate: Moment | null = moment(); // DEBUG
+    private static gtfsCacheDate: Moment | null = null;
 
     private static openDataVersionCache: Moment | null = null;
     private static openDataVersionCacheDate: Moment | null = null;
@@ -470,7 +470,6 @@ class Tper {
             try {
                 // TPER fatta sempre bene, certificato non valido
                 const data = await fetchUrlWithCurl(Tper.newsUrl);
-                // DEBUG
 
                 if (!data) return null;
 
