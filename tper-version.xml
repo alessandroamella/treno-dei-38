@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DataSet xmlns="https://solwsweb.tper.it/web-services/opendata.asmx">
+  <xs:schema id="NewDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xs:element name="NewDataSet" msdata:IsDataSet="true" msdata:UseCurrentLocale="true">
+      <xs:complexType>
+        <xs:choice minOccurs="0" maxOccurs="unbounded">
+          <xs:element name="Table">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="nome_file" type="xs:string" minOccurs="0" />
+                <xs:element name="versione" type="xs:string" minOccurs="0" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <diffgr:diffgram xmlns:msdata="urn:schemas-microsoft-com:xml-msdata" xmlns:diffgr="urn:schemas-microsoft-com:xml-diffgram-v1">
+    <NewDataSet xmlns="">
+      <Table diffgr:id="Table1" msdata:rowOrder="0">
+        <nome_file>archi</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table2" msdata:rowOrder="1">
+        <nome_file>fermate</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table3" msdata:rowOrder="2">
+        <nome_file>gommagtfsbo</nome_file>
+        <versione>20230420</versione>
+      </Table>
+      <Table diffgr:id="Table4" msdata:rowOrder="3">
+        <nome_file>gommagtfsfe</nome_file>
+        <versione>20230420</versione>
+      </Table>
+      <Table diffgr:id="Table5" msdata:rowOrder="4">
+        <nome_file>gtfsmex</nome_file>
+        <versione>20220901</versione>
+      </Table>
+      <Table diffgr:id="Table6" msdata:rowOrder="5">
+        <nome_file>linee</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table7" msdata:rowOrder="6">
+        <nome_file>lineefermate</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table8" msdata:rowOrder="7">
+        <nome_file>lineeferroviarie</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table9" msdata:rowOrder="8">
+        <nome_file>lineepercorsi</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table10" msdata:rowOrder="9">
+        <nome_file>localitazone</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table11" msdata:rowOrder="10">
+        <nome_file>rivendite</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table12" msdata:rowOrder="11">
+        <nome_file>stazioniferroviarie</nome_file>
+        <versione>20230501</versione>
+      </Table>
+      <Table diffgr:id="Table13" msdata:rowOrder="12">
+        <nome_file>zone</nome_file>
+        <versione>20230501</versione>
+      </Table>
+    </NewDataSet>
+  </diffgr:diffgram>
+</DataSet>

@@ -2,13 +2,36 @@ import axios from "axios";
 import moment, { Moment } from "moment-timezone";
 import { logger } from "../utils/logger";
 import { parseStringPromise } from "xml2js";
-import Corsa from "../Seta/Corsa";
+import Corsa from "../interfaces/Corsa";
 import Stop from "../Seta/Stop";
 import Fuse from "fuse.js";
 import { TperNewsItem, rssParser } from "./News";
-import { Item } from "rss-parser";
 import { fetchUrlWithCurl } from "../utils/curlFetch";
 import News from "../interfaces/News";
+import {
+    Route as GTFSRoute,
+    Trip as GTFSTrip,
+    Stop as GTFSStop,
+    StopTime as GTFSStopTime,
+    CalendarDates as GTFSCalendarDates
+} from "gtfs-types";
+import JSZip from "jszip";
+import fs from "fs";
+import path from "path";
+import { writeFile } from "fs/promises";
+import CsvParser from "../utils/CsvParser";
+import {
+    getRouteNameException,
+    isRouteNameException
+} from "./RouteNameExceptions";
+
+interface GTFS {
+    routes: GTFSRoute[];
+    trips: GTFSTrip[];
+    stops: GTFSStop[];
+    stop_times: GTFSStopTime[];
+    calendar_dates: GTFSCalendarDates[];
+}
 
 interface CustomErr {
     msg: string;
@@ -19,12 +42,27 @@ interface FnErr {
     err: CustomErr;
 }
 
+interface OpenDataTable {
+    $: {
+        "diffgr:id": string;
+        "msdata:rowOrder": string;
+    };
+    nome_file: string[];
+    versione: string[];
+}
+
 export interface TperStop extends Stop {
     routes: string[];
 }
 
 interface StopsObj {
     [stopId: string]: Omit<TperStop, "stopId">;
+}
+
+interface TripStops {
+    stop: GTFSStop;
+    scheduledTime: Moment;
+    realTime?: Moment;
 }
 
 function isFnErr(err: unknown): err is FnErr {
@@ -46,9 +84,28 @@ class Tper {
     private static isCaching: boolean = false;
     private static cacheDate: Moment | null = null;
 
+    private static gtfsBasePath = path.join(
+        process.cwd(),
+        "./stops/bologna-gtfs/"
+    );
+
+    private static realTimeUrl =
+        "https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus";
+
+    private static openDataVersionUrl =
+        "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataVersione";
+    private static lineeFermateUrl =
+        "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate";
+
     private static newsUrl = "https://www.tper.it/taxonomy/term/33/all/rss.xml";
     private static newsCache: News[] | null = null;
     private static newsCacheDate: Moment | null = null;
+
+    // private static gtfsCache: GTFS | null = null;
+    private static gtfsCacheDate: Moment | null = moment(); // DEBUG
+
+    private static openDataVersionCache: Moment | null = null;
+    private static openDataVersionCacheDate: Moment | null = null;
 
     private static set fermate(fermate: TperStop[] | null) {
         Tper._fermate = fermate;
@@ -68,16 +125,13 @@ class Tper {
 
         let res;
         try {
-            res = await axios.get(
-                "https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus",
-                {
-                    params: {
-                        fermata: stopId,
-                        linea: route,
-                        oraHHMM: " "
-                    }
+            res = await axios.get(Tper.realTimeUrl, {
+                params: {
+                    fermata: stopId,
+                    linea: route,
+                    oraHHMM: " "
                 }
-            );
+            });
             logger.debug(
                 `TPER fetching data for stop ${stopId} - line ${route}`
             );
@@ -266,7 +320,12 @@ class Tper {
                 ).unix()
         );
 
-        return corse;
+        const mappedToDestination = this.associateRealTimeInfoWithGTFS(
+            stopId,
+            corse
+        );
+
+        return mappedToDestination;
     }
 
     private static async _cacheStops(): Promise<boolean> {
@@ -279,9 +338,7 @@ class Tper {
 
             Tper.isCaching = true;
 
-            const { data } = await axios.post(
-                "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate"
-            );
+            const { data } = await axios.post(Tper.lineeFermateUrl);
 
             logger.info("TPER cache loaded, parsing...");
 
@@ -323,10 +380,6 @@ class Tper {
             );
             Tper.cacheDate = moment();
             logger.info("TPER cache created at " + Tper.cacheDate.format());
-            // writeFileSync(
-            //     join(cwd(), "./tper.json"),
-            //     JSON.stringify(Tper.fermate, null, 4)
-            // );
             Tper.isCaching = false;
             return true;
         } catch (err) {
@@ -440,6 +493,424 @@ class Tper {
             logger.debug("News TPER da cache");
             return Tper.newsCache;
         }
+    }
+
+    private static async fetchLatestOpenDataVersion(): Promise<Moment | null> {
+        if (
+            Tper.openDataVersionCache &&
+            Tper.openDataVersionCacheDate &&
+            moment().diff(Tper.openDataVersionCacheDate, "days") <= 1
+        ) {
+            logger.debug(
+                "TPER open data version from cache: " +
+                    Tper.openDataVersionCache
+            );
+            return Tper.openDataVersionCache;
+        }
+
+        logger.info("Fetching TPER latest open data version");
+
+        let xml: string;
+        let result: { [key: string]: any };
+        try {
+            const res = await axios.get(Tper.openDataVersionUrl);
+            xml = res.data;
+        } catch (err) {
+            logger.error("Error while fetching TPER open data version");
+            logger.error(err);
+            return null;
+        }
+
+        try {
+            result = await parseStringPromise(xml);
+        } catch (err) {
+            logger.error("Error while parsing TPER open data version");
+            logger.error(err);
+            return null;
+        }
+
+        const latestVersionStr = (<OpenDataTable>(
+            result.DataSet["diffgr:diffgram"][0].NewDataSet[0].Table.find(
+                (e: OpenDataTable) => e.nome_file[0] === "gommagtfsbo"
+            )
+        )).versione[0];
+
+        const latestVersion = moment(latestVersionStr, "YYYYMMDD");
+
+        logger.info(
+            `TPER open data version: "${latestVersionStr}" (${latestVersion
+                .tz("Europe/Rome")
+                .format("DD/MM/YYYY")})`
+        );
+
+        Tper.openDataVersionCache = latestVersion;
+        Tper.openDataVersionCacheDate = moment();
+
+        return latestVersion;
+    }
+
+    // Helper function for getGTFSData, not to be used elsewhere
+    private async _fetchAndParseGTFSData(): Promise<null> {
+        if (
+            // Tper.gtfsCache &&
+            Tper.gtfsCacheDate &&
+            moment().diff(Tper.gtfsCacheDate, "days") <= 1
+        ) {
+            logger.debug("TPER GTFS data already updated, not fetching");
+            // return Tper.gtfsCache;
+            return null;
+        }
+
+        logger.info("Fetching TPER GTFS data in _fetchAndParseGTFSData");
+
+        const latestDate = await Tper.fetchLatestOpenDataVersion();
+
+        if (!latestDate) {
+            logger.error("No latest date in _fetchAndParseGTFSData");
+            return null;
+        }
+
+        const url = `https://solweb.tper.it/web/tools/open-data/open-data-download.aspx?source=solweb.tper.it&filename=gommagtfsbo&version=${latestDate
+            ?.tz("Europe/Rome")
+            .format("YYYYMMDD")}&format=zip`;
+
+        logger.debug("Fetching TPER GTFS data from " + url);
+
+        const response = await axios.get(url, { responseType: "arraybuffer" });
+
+        logger.debug("TPER GTFS data fetched from " + url);
+
+        const zip = await JSZip.loadAsync(response.data);
+
+        // const gtfsCache: GTFS = {
+        //     routes: undefined,
+        //     trips: undefined,
+        //     stops: undefined,
+        //     stop_times: undefined,
+        //     calendar_dates: undefined
+        // };
+
+        const files = {
+            routes: "routes.txt",
+            trips: "trips.txt",
+            stops: "stops.txt",
+            stop_times: "stop_times.txt",
+            calendar_dates: "calendar_dates.txt"
+        };
+
+        for (const key in files) {
+            logger.debug(
+                "Parsing TPER GTFS file " + files[<keyof typeof files>key]
+            );
+
+            const file = files[<keyof typeof files>key];
+            const content = await zip.file(file)?.async("string");
+            if (!content) {
+                logger.error("No content in TPER GTFS parse for file " + file);
+                return null;
+            }
+
+            const parsedData = await CsvParser.parseAsync(content, {
+                columns: true,
+                delimiter: ",",
+                trim: true
+            });
+
+            // gtfsCache[<keyof typeof files>key] = parsedData;
+
+            logger.debug(
+                "Parsed TPER GTFS file " + files[<keyof typeof files>key]
+            );
+
+            const jsonFile = file.replace(".txt", ".json");
+            await writeFile(
+                path.join(Tper.gtfsBasePath, jsonFile),
+                JSON.stringify(parsedData, null, 2) // DEBUG
+                // JSON.stringify(parsedData) // don't prettify this, it must be small
+            );
+        }
+
+        // Tper.gtfsCache = gtfsCache;
+        Tper.gtfsCacheDate = moment();
+        // return gtfsCache;
+
+        return null;
+    }
+
+    private async getGTFSData<K extends keyof GTFS>(
+        datum: K
+    ): Promise<GTFS[K] | null> {
+        await this._fetchAndParseGTFSData();
+
+        const p = path.join(Tper.gtfsBasePath, datum + ".json");
+
+        if (!fs.existsSync(p)) {
+            logger.error("No GTFS file in getGTFSData");
+            return null;
+        }
+
+        const gtfsStr = fs.readFileSync(p, { encoding: "utf-8" });
+        let gtfsData: GTFS[K] = JSON.parse(gtfsStr);
+
+        if (!gtfsData) {
+            logger.error("No GTFS data in getGTFSData");
+            return null;
+        }
+
+        // Fix gtfs route TPER name exceptions
+        if (datum === "trips" || datum === "routes") {
+            gtfsData = (gtfsData as (GTFSTrip | GTFSRoute)[]).map(e => ({
+                ...e,
+                route_id: getRouteNameException(e.route_id)
+            })) as GTFS[K];
+        }
+
+        logger.debug("GTFS data fetched for " + datum);
+
+        return gtfsData || null;
+
+        // try {
+        //     const f = await readFile(
+        //         path.join(Tper.gtfsBasePath, datum + ".json"),
+        //         { encoding: "utf-8" }
+        //     );
+
+        //     const obj = JSON.parse(f);
+
+        //     if (!Array.isArray(obj) || obj.some(s => !s)) {
+        //         throw new Error(`Invalid ${datum} obj in getGTFSData: ${f}`);
+        //     }
+
+        //     return obj as GTFSStopTime[];
+        // } catch (err) {
+        //     logger.error("Error while reading GTFS " + datum);
+        //     logger.error(err);
+        //     return null;
+        // }
+    }
+
+    private async findClosestGTFSTrip(
+        realTimeData: Corsa,
+        stopId: string,
+        _gtfsTrips: GTFSTrip[],
+        _gtfsStopTimes: GTFSStopTime[]
+    ): Promise<GTFSTrip | null> {
+        let minDifference = Infinity;
+        let closestTrip: GTFSTrip | null = null;
+
+        const arrivalTime = moment(
+            realTimeData.arrivoTempoReale || realTimeData.arrivoProgrammato,
+            "HH:mm"
+        );
+
+        logger.debug(
+            `Finding closest GTFS trip for TPER trip ${realTimeData.linea} at ${
+                realTimeData.arrivoTempoReale || realTimeData.arrivoProgrammato
+            }`
+        );
+
+        const gtfsTrips = _gtfsTrips?.filter(t =>
+            [
+                t.route_id,
+                t.route_id + t.trip_headsign,
+                t.trip_short_name
+            ].includes(getRouteNameException(realTimeData.linea))
+        );
+        const stopTimes = _gtfsStopTimes?.filter(st => st.stop_id === stopId);
+
+        if (!gtfsTrips || !stopTimes) {
+            logger.warn(
+                `No GTFS data in findClosestGTFSTrip for trip ${
+                    realTimeData.linea
+                } (${getRouteNameException(realTimeData.linea)}`
+            );
+
+            return null;
+        }
+
+        gtfsTrips.forEach(trip => {
+            const stopTime = stopTimes.find(st => st.trip_id === trip.trip_id);
+
+            if (stopTime) {
+                const gtfsArrival = moment(stopTime.arrival_time, "HH:mm:ss");
+
+                // logger.debug(
+                //     `TPER trip ${realTimeData.linea} at ${
+                //         realTimeData.arrivoTempoReale ||
+                //         realTimeData.arrivoProgrammato
+                //     } has GTFS trip ${trip.trip_id} at ${gtfsArrival.format(
+                //         "HH:mm"
+                //     )}`
+                // );
+
+                const difference = Math.abs(
+                    arrivalTime.diff(gtfsArrival, "minutes")
+                );
+                if (difference < minDifference) {
+                    minDifference = difference;
+                    closestTrip = trip;
+                }
+            }
+        });
+
+        if (closestTrip) {
+            logger.debug(
+                `TPER trip ${realTimeData.linea} at ${
+                    realTimeData.arrivoTempoReale ||
+                    realTimeData.arrivoProgrammato
+                } has closest GTFS trip ${
+                    (closestTrip as GTFSTrip)?.trip_id
+                } at ${moment(
+                    stopTimes.find(st => st.trip_id === closestTrip?.trip_id)
+                        ?.arrival_time,
+                    "HH:mm:ss"
+                ).format("HH:mm")}`
+            );
+        } else {
+            logger.debug(
+                `TPER trip ${realTimeData.linea} at ${
+                    realTimeData.arrivoTempoReale ||
+                    realTimeData.arrivoProgrammato
+                } has NO closest GTFS trip`
+            );
+        }
+
+        return closestTrip || null;
+    }
+
+    private getLatestStopTimeForTrip(
+        trip: GTFSTrip,
+        stopTimes: GTFSStopTime[]
+    ): GTFSStopTime | null {
+        const lastStopTime = stopTimes.filter(
+            st => st.trip_id === trip.trip_id
+        );
+
+        if (!lastStopTime.length) return null;
+
+        lastStopTime.sort((a, b) => a.stop_sequence - b.stop_sequence);
+
+        return lastStopTime[lastStopTime.length - 1] || null;
+    }
+
+    private async getStopFromStopTime(
+        stopTime: GTFSStopTime
+    ): Promise<GTFSStop | null> {
+        const lastStop = await this.getGTFSData("stops").then(stops =>
+            stops?.find(stop => stop.stop_id === stopTime.stop_id)
+        );
+
+        return lastStop || null;
+    }
+
+    private async associateRealTimeInfoWithGTFS(
+        stopId: string,
+        realTimeData: Corsa[]
+    ): Promise<Corsa[]> {
+        const gtfsTrips = await this.getGTFSData("trips");
+        const gtfsStopTimes = await this.getGTFSData("stop_times");
+        const gtfsStops = await this.getGTFSData("stops");
+
+        const promises = realTimeData.map(async tripData => {
+            logger.debug(
+                "Associating GTFS data with TPER data for trip of line " +
+                    tripData.linea
+            );
+
+            if (!gtfsTrips || !gtfsStopTimes || !gtfsStops) {
+                logger.warn(
+                    "No GTFS data in associateRealTimeInfoWithGTFS for trip " +
+                        tripData.linea
+                );
+                return tripData;
+            }
+
+            const associatedGTFSTrip = await this.findClosestGTFSTrip(
+                tripData,
+                stopId,
+                gtfsTrips,
+                gtfsStopTimes
+            );
+
+            if (associatedGTFSTrip) {
+                const lastStopTime = this.getLatestStopTimeForTrip(
+                    associatedGTFSTrip,
+                    gtfsStopTimes
+                );
+
+                if (!lastStopTime)
+                    throw new Error(
+                        "No lastStopTime in associateRealTimeInfoWithGTFS"
+                    );
+
+                const lastStop = await this.getStopFromStopTime(lastStopTime);
+
+                tripData.trip = associatedGTFSTrip;
+                tripData.destinazione =
+                    // associatedGTFSTrip.trip_headsign ||
+                    lastStop?.stop_name || null;
+                tripData.arrivoProgrammato = moment(
+                    lastStopTime.arrival_time,
+                    "HH:mm:ss"
+                )
+                    .tz("Europe/Rome")
+                    .format("HH:mm");
+            }
+
+            logger.debug(
+                `TPER trip ${tripData.linea} at ${
+                    tripData.arrivoTempoReale || tripData.arrivoProgrammato
+                } has destination "${tripData.destinazione}"`
+            );
+
+            return tripData;
+        });
+
+        return Promise.all(promises);
+    }
+
+    public async caricaFermateDaTrip(
+        gtfsTripId: string,
+        minutesDelay: number
+    ): Promise<TripStops[] | null> {
+        const gtfsStopTimes = await this.getGTFSData("stop_times");
+        const gtfsStops = await this.getGTFSData("stops");
+
+        if (!gtfsStopTimes || !gtfsStops) {
+            logger.warn(
+                "No GTFS data in caricaFermateDaTrip for trip " + gtfsTripId
+            );
+            return null;
+        }
+
+        const stopTimes = gtfsStopTimes.filter(st => st.trip_id === gtfsTripId);
+
+        const stops: TripStops[] = [];
+
+        for (const stopTime of stopTimes) {
+            const stop = gtfsStops.find(s => s.stop_id === stopTime.stop_id);
+
+            if (!stop) {
+                logger.warn(
+                    "No stop in caricaFermateDaTrip for trip " +
+                        gtfsTripId +
+                        " and stop " +
+                        stopTime.stop_id
+                );
+                continue;
+            }
+
+            const stopTimeMoment = moment(stopTime.arrival_time, "HH:mm:ss");
+            const realTimeMoment = stopTimeMoment.add(minutesDelay, "minutes");
+
+            stops.push({
+                stop,
+                scheduledTime: stopTimeMoment,
+                realTime: realTimeMoment
+            });
+        }
+
+        return stops;
     }
 }
 

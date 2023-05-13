@@ -4,7 +4,7 @@ import path, { join } from "path";
 import fs, { writeFileSync } from "fs";
 import util from "util";
 import { logger } from "../utils/logger";
-import Corsa from "./Corsa";
+import Corsa from "../interfaces/Corsa";
 import RawData from "./RawData";
 import RawError, { isRawError } from "./RawError";
 import Stop, { isStop } from "./Stop";
@@ -12,6 +12,7 @@ import Fuse from "fuse.js";
 import * as cheerio from "cheerio";
 import { Agent } from "https";
 import News from "../interfaces/News";
+import { readFile } from "fs/promises";
 
 class Seta {
     private static fermate: Stop[] | null = null;
@@ -101,8 +102,7 @@ class Seta {
         try {
             const p = path.join(process.cwd(), "./stops/modena.json");
 
-            const rfES6 = util.promisify(fs.readFile);
-            const f = await rfES6(p, { encoding: "utf-8" });
+            const f = await readFile(p, { encoding: "utf-8" });
 
             const obj = JSON.parse(f);
 

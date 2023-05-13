@@ -9,7 +9,6 @@ import { Server } from "socket.io";
 import Position from "./interfaces/Position";
 import Tper, { TperStop } from "./Tper";
 import StopSearcher from "./utils/StopSearcher";
-import Corsa from "./Seta/Corsa";
 import { AgencyType, isAgencyType, isNewsType } from "./interfaces/AgencyType";
 import moment from "moment";
 
@@ -17,6 +16,9 @@ import "dotenv/config";
 import News from "./interfaces/News";
 import FerrovieInfo from "./FerrovieInfo";
 import SanCesario from "./SanCesario";
+import Corsa from "./interfaces/Corsa";
+
+import "./config";
 
 dotenv.config();
 
@@ -123,7 +125,7 @@ app.get("/fermatadanome", async (req, res) => {
 });
 
 app.get("/bus", async (req, res) => {
-    const { q, agency } = req.query;
+    const { q, agency, limit } = req.query;
 
     if (typeof q !== "string") {
         return res.sendStatus(400);
@@ -168,7 +170,14 @@ app.get("/bus", async (req, res) => {
             moment(b.arrivoTempoReale || b.arrivoProgrammato, "HH:mm").unix()
     );
 
-    return res.json(corse.slice(0, 10));
+    return res.json(
+        corse.slice(
+            0,
+            typeof limit === "string" && /^\+?\d+$/.test(limit)
+                ? Number(limit)
+                : 30
+        )
+    );
 });
 
 app.get("/news", async (req, res) => {
@@ -190,10 +199,10 @@ app.get("/news", async (req, res) => {
             const _tt = await Trenitalia.getNews();
             if (_tt) news.push(..._tt);
         }
-        if (!agency || (isNewsType(agency) && agency === "ferrovie.info")) {
-            const _f = await FerrovieInfo.getNews();
-            if (_f) news.push(..._f);
-        }
+        // if (!agency || (isNewsType(agency) && agency === "ferrovie.info")) {
+        //     const _f = await FerrovieInfo.getNews();
+        //     if (_f) news.push(..._f);
+        // }
         if (!agency || (isNewsType(agency) && agency === "sancesario")) {
             const _sc = await SanCesario.getNews();
             if (_sc) news.push(..._sc);
@@ -206,7 +215,7 @@ app.get("/news", async (req, res) => {
                 0,
                 typeof limit === "string" && /^\+?\d+$/.test(limit)
                     ? Number(limit)
-                    : 60
+                    : 40
             )
         );
     } catch (err) {
@@ -230,6 +239,36 @@ app.get("/geolocation/:password", (req, res) => {
     }
 
     res.sendFile(path.join(process.cwd(), "./geolocation.html"));
+});
+
+app.get("/fermatetrip", async (req, res) => {
+    const { trip, minutesDelay } = req.query;
+
+    if (typeof trip !== "string") {
+        return res.sendStatus(400);
+    }
+
+    const stops = await t.caricaFermateDaTrip(
+        trip,
+        typeof minutesDelay === "string" && /^\+?\d+$/.test(minutesDelay)
+            ? Number(minutesDelay)
+            : 0
+    );
+
+    if (!stops) {
+        logger.error("stops for caricaFermateDaTrip in /fermatetrip falsy");
+        return res.sendStatus(500);
+    }
+
+    logger.debug(`Ricerca fermate trip ${stops.length} risultati`);
+
+    return res.json(
+        stops.map(s => ({
+            ...s,
+            scheduledTime: s.scheduledTime.tz("Europe/Rome").format("HH:mm"),
+            realTime: s.realTime?.tz("Europe/Rome").format("HH:mm")
+        }))
+    );
 });
 
 app.all("*", (req, res) => {

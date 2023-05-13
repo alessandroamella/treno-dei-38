@@ -8,6 +8,8 @@ const modal = new bootstrap.Modal(document.querySelector(".main-modal"));
 const cercaFermataModal = new bootstrap.Modal(
     document.querySelector(".cerca-fermata-modal")
 );
+const tripModal = new bootstrap.Modal(document.querySelector(".trip-modal"));
+
 document
     .querySelector(".cerca-fermata-modal")
     .addEventListener("hidden.bs.modal", function (event) {
@@ -216,28 +218,34 @@ function setSetaBus(c, card) {
 function setTperBus(c, card) {
     if (c.tempoReale) {
         card.title += "Bus " + c.busNum;
+        if (c.arrivoProgrammato) {
+            card.title += "<br>Programmato: " + c.arrivoProgrammato;
+        }
         card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
-        // if (c.numPasseggeri) {
-        //     card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
-        // } else if (c.postiTotali) {
-        //     card.title += "<br>Posti totali: " + c.postiTotali;
-        // }
-
-        // card.style.cursor = "pointer";
-        // card.classList.add("btn");
-        // card.style.textAlign = "left";
-
-        // card.addEventListener("click", () => {
-        //     document.querySelector(
-        //         ".main-modal-title"
-        //     ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
-        //     document.querySelector(
-        //         ".main-modal-body"
-        //     ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
-        //     modal.show();
-        // });
     } else {
         card.title += "Programmato: " + c.arrivoProgrammato;
+        card.classList.remove("btn");
+    }
+
+    if (c.trip) {
+        // card.style.cursor = "pointer";
+        card.classList.add("btn");
+        card.style.textAlign = "left";
+
+        card.addEventListener("click", () => {
+            loadTrips(
+                c.linea,
+                c.trip.trip_id,
+                c.arrivoTempoReale && c.arrivoProgrammato
+                    ? dateFns.differenceInMinutes(
+                          _parseHHMM(c.arrivoProgrammato),
+                          _parseHHMM(c.arrivoTempoReale)
+                      )
+                    : 0
+            );
+        });
+    } else {
+        // card.title += "Programmato: " + c.arrivoProgrammato;
         card.classList.remove("btn");
     }
 }
@@ -317,6 +325,8 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
  * @param {'seta' | 'tper'} [agency]
  */
 async function bus(cardNum, fermata, data = null, nomeFermata = null) {
+    tripModal.hide();
+
     if (!nomeFermata) await _infoFermata(fermata, cardNum);
 
     if (busInterval[cardNum]) {
@@ -583,6 +593,105 @@ async function tabellone(stazione) {
         </ul>
     `;
     modal.show();
+
+    _refresh();
+}
+
+/**
+ * Represents a stop in the General Transit Feed Specification (GTFS).
+ *
+ * @typedef {Object} GTFSStop
+ * @property {string} stop_id - The ID of the stop.
+ * @property {string|undefined} [stop_code] - The code of the stop, if available.
+ * @property {string|undefined} [stop_name] - The name of the stop, if available.
+ * @property {string|undefined} [stop_desc] - The description of the stop, if available.
+ * @property {number|undefined} [stop_lat] - The latitude of the stop, if available.
+ * @property {number|undefined} [stop_lon] - The longitude of the stop, if available.
+ * @property {string|undefined} [zone_id] - The ID of the zone the stop is in, if available.
+ * @property {string|undefined} [stop_url] - The URL of the stop, if available.
+ * @property {LocationType|undefined} [location_type] - The type of the stop location, if available.
+ * @property {string|undefined} [parent_station] - The ID of the parent station, if available.
+ * @property {string|undefined} [stop_timezone] - The timezone of the stop, if available.
+ * @property {WheelchairBoardingType|""|undefined} [wheelchair_boarding] - The wheelchair boarding type of the stop, if available.
+ * @property {string|undefined} [level_id] - The ID of the level the stop is on, if available.
+ * @property {string|undefined} [platform_code] - The platform code of the stop, if available.
+ */
+
+/**
+ * Represents a stop on a trip.
+ *
+ * @typedef {Object} TripStop
+ * @property {GTFSStop} stop - The GTFS stop associated with the trip stop.
+ * @property {Moment} scheduledTime - The scheduled time of the stop as a Moment object.
+ * @property {Moment|undefined} [realTime] - The real-time of the stop as a Moment object, if available.
+ */
+
+/**
+ * Returns an object representing a trip with the given ID.
+ *
+ * @async
+ * @function
+ * @param {string} tripId - The ID of the trip to retrieve.
+ * @param {number} minutesDelay - The number of minutes of delay for the trip.
+ * @returns {Promise<object>} An object representing the requested trip, containing trip details and delay information.
+ */
+async function loadTrips(line, tripId, minutesDelay) {
+    tripModal.show();
+
+    document.querySelector(".trip-modal-title").textContent =
+        "Caricamento fermate...";
+
+    document.querySelector(".trip-modal-body").innerHTML = loadingHTML;
+    tripModal.show();
+
+    /** @type {TripStop[]} */
+    let data;
+    try {
+        data = (
+            await axios.get("/fermatetrip", {
+                params: {
+                    trip: tripId,
+                    minutesDelay
+                }
+            })
+        ).data;
+    } catch (err) {
+        alert(err?.response?.data || err);
+        return tripModal.hide();
+    }
+
+    console.log(data);
+
+    document.querySelector(".trip-modal-title").textContent =
+        "Fermate di sto " + line;
+    document.querySelector(".trip-modal-body").innerHTML = `
+        <ul class="list-group">
+            ${data
+                .map(
+                    e => `
+                    <li class="list-group-item btn" style="text-align: left;" onclick="bus(1, ${
+                        e.stop.stop_id
+                    }, undefined, '${e.stop.stop_name}');"><strong>${
+                        e.stop.stop_name
+                    }</strong> ${e.stop.stop_id}
+                    <span class="float-end">${
+                        e.realTime && e.realTime !== e.scheduledTime
+                            ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
+                                  _parseHHMM(e.scheduledTime)
+                              )}</span><span style="font-weight: 600;">${_parseHHMM(
+                                  e.realTime
+                              )}</span>`
+                            : `<span style="font-weight: 600;">${_formattaData(
+                                  _parseHHMM(e.scheduledTime)
+                              )}</span>`
+                    }</span>
+                    </li>
+            `
+                )
+                .join("")}
+        </ul>
+    `;
+    tripModal.show();
 
     _refresh();
 }
