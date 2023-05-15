@@ -34,7 +34,7 @@ class SanCesario {
 
                 return news;
             } catch (err) {
-                logger.error("Error while reading SanCesario news");
+                logger.error("Error while fetching SanCesario news");
                 logger.error(err);
                 return null;
             }

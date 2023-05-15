@@ -196,7 +196,7 @@ class Trenitalia {
 
                 return news;
             } catch (err) {
-                logger.error("Error while reading Trenitalia news");
+                logger.error("Error while fetching Trenitalia news");
                 logger.error(err);
                 return null;
             }

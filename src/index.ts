@@ -1,6 +1,7 @@
 import express from "express";
-import path, { join } from "path";
+import path from "path";
 import dotenv from "dotenv";
+import { CronJob } from "cron";
 
 import { logger } from "./utils/logger";
 import Trenitalia from "./Trenitalia";
@@ -317,3 +318,21 @@ io.on("connection", socket => {
         socket.emit("ok-pos", new Date().valueOf());
     });
 });
+
+// refresh TPER cache chron job
+const job = new CronJob(
+    "0 0 0 * * *",
+    async () => {
+        try {
+            logger.info("Tper reloading cache job");
+            await Tper.forceReloadCache();
+            logger.info("TPER cache reloaded");
+        } catch (err) {
+            logger.error("TPER force reload job failed:");
+            logger.error(err);
+        }
+    },
+    null,
+    true,
+    "Europe/Rome"
+);

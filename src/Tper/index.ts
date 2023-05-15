@@ -20,10 +20,7 @@ import fs from "fs";
 import path from "path";
 import { writeFile } from "fs/promises";
 import CsvParser from "../utils/CsvParser";
-import {
-    getRouteNameException,
-    isRouteNameException
-} from "./RouteNameExceptions";
+import { getRouteNameException } from "./RouteNameExceptions";
 
 interface GTFS {
     routes: GTFSRoute[];
@@ -102,7 +99,7 @@ class Tper {
     private static newsCacheDate: Moment | null = null;
 
     // private static gtfsCache: GTFS | null = null;
-    private static gtfsCacheDate: Moment | null = null;
+    private static gtfsCacheDate: Moment | null = moment(); // DEBUG
 
     private static openDataVersionCache: Moment | null = null;
     private static openDataVersionCacheDate: Moment | null = null;
@@ -320,7 +317,7 @@ class Tper {
                 ).unix()
         );
 
-        const mappedToDestination = this.associateRealTimeInfoWithGTFS(
+        const mappedToDestination = await this.associateRealTimeInfoWithGTFS(
             stopId,
             corse
         );
@@ -383,7 +380,7 @@ class Tper {
             Tper.isCaching = false;
             return true;
         } catch (err) {
-            logger.error("Error while reading TPER stops");
+            logger.error("Error while caching TPER stops");
             logger.error(err);
             Tper.isCaching = false;
             return false;
@@ -484,7 +481,7 @@ class Tper {
 
                 return news;
             } catch (err) {
-                logger.error("Error while reading TPER news");
+                logger.error("Error while fetching TPER news");
                 logger.error(err);
                 return null;
             }
@@ -549,8 +546,9 @@ class Tper {
     }
 
     // Helper function for getGTFSData, not to be used elsewhere
-    private async _fetchAndParseGTFSData(): Promise<null> {
+    private static async _fetchAndParseGTFSData(force = false): Promise<null> {
         if (
+            !force &&
             // Tper.gtfsCache &&
             Tper.gtfsCacheDate &&
             moment().diff(Tper.gtfsCacheDate, "days") <= 1
@@ -639,7 +637,7 @@ class Tper {
     private async getGTFSData<K extends keyof GTFS>(
         datum: K
     ): Promise<GTFS[K] | null> {
-        await this._fetchAndParseGTFSData();
+        await Tper._fetchAndParseGTFSData();
 
         const p = path.join(Tper.gtfsBasePath, datum + ".json");
 
@@ -693,9 +691,10 @@ class Tper {
         stopId: string,
         _gtfsTrips: GTFSTrip[],
         _gtfsStopTimes: GTFSStopTime[]
-    ): Promise<GTFSTrip | null> {
+    ): Promise<[trip: GTFSTrip, gtfsArrival: Moment] | null> {
         let minDifference = Infinity;
         let closestTrip: GTFSTrip | null = null;
+        let gtfsArrival: Moment | null = null;
 
         const arrivalTime = moment(
             realTimeData.arrivoTempoReale || realTimeData.arrivoProgrammato,
@@ -731,7 +730,7 @@ class Tper {
             const stopTime = stopTimes.find(st => st.trip_id === trip.trip_id);
 
             if (stopTime) {
-                const gtfsArrival = moment(stopTime.arrival_time, "HH:mm:ss");
+                const _gtfsArrival = moment(stopTime.arrival_time, "HH:mm:ss");
 
                 // logger.debug(
                 //     `TPER trip ${realTimeData.linea} at ${
@@ -743,11 +742,12 @@ class Tper {
                 // );
 
                 const difference = Math.abs(
-                    arrivalTime.diff(gtfsArrival, "minutes")
+                    arrivalTime.diff(_gtfsArrival, "minutes")
                 );
                 if (difference < minDifference) {
                     minDifference = difference;
                     closestTrip = trip;
+                    gtfsArrival = _gtfsArrival;
                 }
             }
         });
@@ -774,7 +774,7 @@ class Tper {
             );
         }
 
-        return closestTrip || null;
+        return closestTrip && gtfsArrival ? [closestTrip, gtfsArrival] : null;
     }
 
     private getLatestStopTimeForTrip(
@@ -802,7 +802,7 @@ class Tper {
         return lastStop || null;
     }
 
-    private async associateRealTimeInfoWithGTFS(
+    public async associateRealTimeInfoWithGTFS(
         stopId: string,
         realTimeData: Corsa[]
     ): Promise<Corsa[]> {
@@ -824,14 +824,17 @@ class Tper {
                 return tripData;
             }
 
-            const associatedGTFSTrip = await this.findClosestGTFSTrip(
+            const closestTripAndDistance = await this.findClosestGTFSTrip(
                 tripData,
                 stopId,
                 gtfsTrips,
                 gtfsStopTimes
             );
 
-            if (associatedGTFSTrip) {
+            if (closestTripAndDistance) {
+                const [associatedGTFSTrip, gtfsArrival] =
+                    closestTripAndDistance;
+
                 const lastStopTime = this.getLatestStopTimeForTrip(
                     associatedGTFSTrip,
                     gtfsStopTimes
@@ -848,10 +851,7 @@ class Tper {
                 tripData.destinazione =
                     // associatedGTFSTrip.trip_headsign ||
                     lastStop?.stop_name || null;
-                tripData.arrivoProgrammato = moment(
-                    lastStopTime.arrival_time,
-                    "HH:mm:ss"
-                )
+                tripData.arrivoProgrammato = gtfsArrival
                     .tz("Europe/Rome")
                     .format("HH:mm");
             }
@@ -910,6 +910,16 @@ class Tper {
         }
 
         return stops;
+    }
+
+    /**
+     * Force reloads both stops and GTFS data
+     */
+    public static async forceReloadCache() {
+        logger.info("TPER force reloading cache");
+        await Tper._fetchAndParseGTFSData(true);
+        await Tper._cacheStops();
+        logger.info("TPER cache reloaded");
     }
 }
 
