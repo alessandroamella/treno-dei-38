@@ -83,6 +83,9 @@ class Seta {
             }
         }
 
+        logger.debug("Corse SETA restituite:");
+        logger.debug(corse);
+
         corse.sort(
             (a, b) =>
                 moment(

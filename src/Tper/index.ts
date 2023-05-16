@@ -283,6 +283,12 @@ class Tper {
             linee = s.routes;
         }
 
+        logger.debug(
+            `Carico corse TPER per fermata ${stopId} per linee ${linee.join(
+                ", "
+            )}.`
+        );
+
         for (const linea of linee) {
             const job = Tper._getTripsForRoute(stopId, linea)
                 .then(corsa => {
@@ -304,6 +310,9 @@ class Tper {
         }
 
         await Promise.all(jobs);
+
+        logger.debug("Corse TPER restituite:");
+        logger.debug(corse);
 
         corse.sort(
             (a, b) =>
