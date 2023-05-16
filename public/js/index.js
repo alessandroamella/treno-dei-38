@@ -317,6 +317,8 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
     }
 }
 
+let isLoading = false;
+
 /**
  * @param {number} cardNum
  * @param {string | string[]} fermata
@@ -326,6 +328,7 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
  */
 async function bus(cardNum, fermata, data = null, nomeFermata = null) {
     // tripModal.hide();
+    isLoading = true; // use this externally
 
     if (!nomeFermata) await _infoFermata(fermata, cardNum);
 
@@ -349,6 +352,7 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
             if (busInterval[cardNum]) {
                 clearInterval(busInterval[cardNum]);
             }
+            isLoading = false;
             return alert(err.response?.data || "Errore sconosciuto");
         }
     }
@@ -374,14 +378,15 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
             nomeFermata;
     }
 
-    busInterval[cardNum] = setInterval(
-        () =>
-            // data && nomeFermata
-            //     ? fermata(nomeFermata)
-            //     :
-            bus(cardNum, fermata, data, nomeFermata),
-        30000
-    );
+    busInterval[cardNum] = setInterval(() =>
+        // data && nomeFermata
+        //     ? fermata(nomeFermata)
+        //     :
+        {
+            if (!isLoading) bus(cardNum, fermata, data, nomeFermata);
+        }, 30000);
+
+    isLoading = false;
 }
 
 /**
