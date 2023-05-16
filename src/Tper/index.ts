@@ -99,7 +99,7 @@ class Tper {
     private static newsCacheDate: Moment | null = null;
 
     // private static gtfsCache: GTFS | null = null;
-    private static gtfsCacheDate: Moment | null = moment(); // DEBUG
+    private static gtfsCacheDate: Moment | null = null;
 
     private static openDataVersionCache: Moment | null = null;
     private static openDataVersionCacheDate: Moment | null = null;
@@ -329,7 +329,7 @@ class Tper {
         );
 
         logger.debug("Corse TPER restituite:");
-        console.log(mappedToDestination);
+        logger.debug(JSON.stringify(mappedToDestination, null, 2));
 
         return mappedToDestination;
     }
@@ -631,8 +631,7 @@ class Tper {
             const jsonFile = file.replace(".txt", ".json");
             await writeFile(
                 path.join(Tper.gtfsBasePath, jsonFile),
-                JSON.stringify(parsedData, null, 2) // DEBUG
-                // JSON.stringify(parsedData) // don't prettify this, it must be small
+                JSON.stringify(parsedData, null, 2)
             );
         }
 
@@ -741,15 +740,6 @@ class Tper {
             if (stopTime) {
                 const _gtfsArrival = moment(stopTime.arrival_time, "HH:mm:ss");
 
-                // logger.debug(
-                //     `TPER trip ${realTimeData.linea} at ${
-                //         realTimeData.arrivoTempoReale ||
-                //         realTimeData.arrivoProgrammato
-                //     } has GTFS trip ${trip.trip_id} at ${gtfsArrival.format(
-                //         "HH:mm"
-                //     )}`
-                // );
-
                 const difference = Math.abs(
                     arrivalTime.diff(_gtfsArrival, "minutes")
                 );
@@ -840,9 +830,12 @@ class Tper {
                 gtfsStopTimes
             );
 
+            let gtfsArrival: Moment | null = null;
+
             if (closestTripAndDistance) {
-                const [associatedGTFSTrip, gtfsArrival] =
+                const [associatedGTFSTrip, _gtfsArrival] =
                     closestTripAndDistance;
+                gtfsArrival = _gtfsArrival;
 
                 const lastStopTime = this.getLatestStopTimeForTrip(
                     associatedGTFSTrip,
@@ -861,14 +854,17 @@ class Tper {
                     // associatedGTFSTrip.trip_headsign ||
                     lastStop?.stop_name || null;
                 tripData.arrivoProgrammato = gtfsArrival
-                    .tz("Europe/Rome")
+                    // .tz("Europe/Rome")
                     .format("HH:mm");
             }
 
             logger.debug(
                 `TPER trip ${tripData.linea} at ${
                     tripData.arrivoTempoReale || tripData.arrivoProgrammato
-                } has destination "${tripData.destinazione}"`
+                } has destination "${tripData.destinazione}" and arrival time ${
+                    gtfsArrival?.format("HH:mm")
+                    // ?.tz("Europe/Rome")
+                }`
             );
 
             return tripData;
