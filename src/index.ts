@@ -1,6 +1,5 @@
 import express from "express";
 import path from "path";
-import dotenv from "dotenv";
 import { CronJob } from "cron";
 
 import { logger } from "./utils/logger";
@@ -20,8 +19,6 @@ import SanCesario from "./SanCesario";
 import Corsa from "./interfaces/Corsa";
 
 import "./config";
-
-dotenv.config();
 
 const s = new Seta();
 const t = new Tper();
