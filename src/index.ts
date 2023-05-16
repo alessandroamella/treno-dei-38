@@ -266,8 +266,10 @@ app.get("/fermatetrip", async (req, res) => {
     return res.json(
         stops.map(s => ({
             ...s,
-            scheduledTime: s.scheduledTime.tz("Europe/Rome").format("HH:mm"),
-            realTime: s.realTime?.tz("Europe/Rome").format("HH:mm")
+            scheduledTime: s.scheduledTime /*.tz("Europe/Rome")*/
+                .format("HH:mm"),
+            realTime: s.realTime /*.tz("Europe/Rome")*/
+                ?.format("HH:mm")
         }))
     );
 });
