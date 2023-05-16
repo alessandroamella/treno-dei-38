@@ -84,7 +84,7 @@ class Seta {
         }
 
         logger.debug("Corse SETA restituite:");
-        logger.debug(corse);
+        logger.debug(JSON.stringify(corse, null, 2));
 
         corse.sort(
             (a, b) =>

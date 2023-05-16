@@ -286,7 +286,7 @@ class Tper {
         logger.debug(
             `Carico corse TPER per fermata ${stopId} per linee ${linee.join(
                 ", "
-            )}.`
+            )}`
         );
 
         for (const linea of linee) {
@@ -311,9 +311,6 @@ class Tper {
 
         await Promise.all(jobs);
 
-        logger.debug("Corse TPER restituite:");
-        logger.debug(corse);
-
         corse.sort(
             (a, b) =>
                 moment(
@@ -330,6 +327,9 @@ class Tper {
             stopId,
             corse
         );
+
+        logger.debug("Corse TPER restituite:");
+        console.log(mappedToDestination);
 
         return mappedToDestination;
     }
