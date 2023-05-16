@@ -325,7 +325,7 @@ function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
  * @param {'seta' | 'tper'} [agency]
  */
 async function bus(cardNum, fermata, data = null, nomeFermata = null) {
-    tripModal.hide();
+    // tripModal.hide();
 
     if (!nomeFermata) await _infoFermata(fermata, cardNum);
 
@@ -669,7 +669,7 @@ async function loadTrips(line, tripId, minutesDelay) {
             ${data
                 .map(
                     e => `
-                    <li class="list-group-item btn" style="text-align: left;" onclick="bus(1, ${
+                    <li class="list-group-item btn" style="text-align: left;" onclick="tripModal.hide();bus(1, ${
                         e.stop.stop_id
                     }, undefined, '${e.stop.stop_name}');"><strong>${
                         e.stop.stop_name
