@@ -238,8 +238,8 @@ function setTperBus(c, card) {
                 c.trip.trip_id,
                 c.arrivoTempoReale && c.arrivoProgrammato
                     ? dateFns.differenceInMinutes(
-                          _parseHHMM(c.arrivoProgrammato),
-                          _parseHHMM(c.arrivoTempoReale)
+                          _parseHHMM(c.arrivoTempoReale),
+                          _parseHHMM(c.arrivoProgrammato)
                       )
                     : 0
             );
@@ -483,7 +483,7 @@ async function fermate(fermata) {
     document.querySelector(".main-modal-body").innerHTML = loadingHTML;
     modal.show();
 
-    console.log(fermata);
+    console.log("fermata", fermata);
 
     document.querySelector(".main-modal-title").textContent =
         "Seleziona ID delle fermate di " + fermata.nome;
@@ -638,6 +638,7 @@ async function tabellone(stazione) {
  * @function
  * @param {string} tripId - The ID of the trip to retrieve.
  * @param {number} minutesDelay - The number of minutes of delay for the trip.
+ * @param {Date} scheduledTime - The date representing the scheduled arrival time.
  * @returns {Promise<object>} An object representing the requested trip, containing trip details and delay information.
  */
 async function loadTrips(line, tripId, minutesDelay) {
@@ -665,7 +666,16 @@ async function loadTrips(line, tripId, minutesDelay) {
         return tripModal.hide();
     }
 
-    console.log(data);
+    // this is terrible but we have to make it work
+    data = data.map(e => ({
+        ...e,
+        realTime: _formattaData(
+            dateFns.addMinutes(_parseHHMM(e.scheduledTime), minutesDelay),
+            false
+        )
+    }));
+
+    console.log("loadTrips", data);
 
     document.querySelector(".trip-modal-title").textContent =
         "Fermate di sto " + line;
@@ -674,21 +684,35 @@ async function loadTrips(line, tripId, minutesDelay) {
             ${data
                 .map(
                     e => `
-                    <li class="list-group-item btn" style="text-align: left;" onclick="tripModal.hide();bus(1, ${
+                    <li class="list-group-item btn" style="text-align: left;${
+                        !isBefore(e.realTime)
+                            ? "   background-color: lightgray;"
+                            : ""
+                    }" onclick="tripModal.hide();bus(1, ${
                         e.stop.stop_id
                     }, undefined, '${e.stop.stop_name}');"><strong>${
                         e.stop.stop_name
                     }</strong> ${e.stop.stop_id}
                     <span class="float-end">${
-                        e.realTime && e.realTime !== e.scheduledTime
+                        e.realTime &&
+                        e.realTime !== e.scheduledTime &&
+                        isBefore(e.realTime)
                             ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
                                   _parseHHMM(e.scheduledTime)
-                              )}</span><span style="font-weight: 600;">${_parseHHMM(
+                              )}</span><span style="font-weight: 600;">${
+                                  // _parseHHMM(
                                   e.realTime
-                              )}</span>`
-                            : `<span style="font-weight: 600;">${_formattaData(
-                                  _parseHHMM(e.scheduledTime)
-                              )}</span>`
+                                  //   )
+                              }</span>`
+                            : `<span style="${
+                                  e.realTime && e.realTime !== e.scheduledTime
+                                      ? ""
+                                      : "font-weight: 600;"
+                              }">${
+                                  // _formattaData(_parseHHMM(
+                                  e.scheduledTime
+                                  // ))
+                              }</span>`
                     }</span>
                     </li>
             `
@@ -699,33 +723,6 @@ async function loadTrips(line, tripId, minutesDelay) {
     tripModal.show();
 
     _refresh();
-}
-
-/** @param {{id: string, nome: string}} stazione */
-async function fermata(fermata) {
-    cercaFermataModal.hide();
-
-    setBusCardLoading(1);
-    document.getElementById(`bus-${1}-card`).scrollIntoView();
-
-    console.log({ fermata });
-
-    try {
-        data = (
-            await axios.get("/busdanome", {
-                params: {
-                    q: fermata.nome
-                }
-            })
-        ).data;
-        if (!data) throw new Error("non worka");
-
-        bus(1, fermata.nome, data, fermata.nome);
-
-        console.log("busdanome", data);
-    } catch (err) {
-        console.log(err?.response?.data || err);
-    }
 }
 
 function trenoModal(numTreno, idOrigine) {

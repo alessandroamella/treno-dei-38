@@ -99,7 +99,7 @@ class Tper {
     private static newsCacheDate: Moment | null = null;
 
     // private static gtfsCache: GTFS | null = null;
-    private static gtfsCacheDate: Moment | null = null;
+    private static gtfsCacheDate: Moment | null = moment(); // DEBUG
 
     private static openDataVersionCache: Moment | null = null;
     private static openDataVersionCacheDate: Moment | null = null;
@@ -342,6 +342,19 @@ class Tper {
             }
             logger.info("Creo cache TPER...");
 
+            // Use this only for DEBUG
+            Tper.fermate = JSON.parse(
+                fs.readFileSync(
+                    path.join(process.cwd(), "tper_stops_cached.debug.json"),
+                    { encoding: "utf-8" }
+                )
+            ) as TperStop[];
+            Tper.cacheDate = moment();
+            logger.info("TPER cache created at " + Tper.cacheDate.format());
+            Tper.isCaching = false;
+
+            return true;
+
             Tper.isCaching = true;
 
             const { data } = await axios.post(Tper.lineeFermateUrl);
@@ -384,8 +397,13 @@ class Tper {
                         routes: e[1].routes
                     } as TperStop)
             );
+            // Use this for DEBUG only
+            fs.writeFileSync(
+                path.join(process.cwd(), "tper_stops_cached.debug.json"),
+                JSON.stringify(Tper.fermate, null, 4)
+            );
             Tper.cacheDate = moment();
-            logger.info("TPER cache created at " + Tper.cacheDate.format());
+            logger.info("TPER cache created at " + Tper.cacheDate?.format());
             Tper.isCaching = false;
             return true;
         } catch (err) {
