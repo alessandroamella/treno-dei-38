@@ -383,7 +383,8 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
         //     ? fermata(nomeFermata)
         //     :
         {
-            if (!isLoading) bus(cardNum, fermata, data, nomeFermata);
+            if (!isLoading && !isViewingTripModal)
+                bus(cardNum, fermata, data, nomeFermata);
         }, 30000);
 
     isLoading = false;
@@ -631,6 +632,8 @@ async function tabellone(stazione) {
  * @property {Moment|undefined} [realTime] - The real-time of the stop as a Moment object, if available.
  */
 
+let isViewingTripModal = false;
+
 /**
  * Returns an object representing a trip with the given ID.
  *
@@ -644,11 +647,13 @@ async function tabellone(stazione) {
 async function loadTrips(line, tripId, minutesDelay) {
     tripModal.show();
 
+    isViewingTripModal = true;
+
     document.querySelector(".trip-modal-title").textContent =
         "Caricamento fermate...";
 
     document.querySelector(".trip-modal-body").innerHTML = loadingHTML;
-    tripModal.show();
+    // tripModal.show();
 
     /** @type {TripStop[]} */
     let data;
@@ -663,6 +668,7 @@ async function loadTrips(line, tripId, minutesDelay) {
         ).data;
     } catch (err) {
         alert(err?.response?.data || err);
+        isViewingTripModal = false;
         return tripModal.hide();
     }
 
@@ -720,7 +726,9 @@ async function loadTrips(line, tripId, minutesDelay) {
                 .join("")}
         </ul>
     `;
-    tripModal.show();
+    // tripModal.show();
+
+    isViewingTripModal = false;
 
     _refresh();
 }
