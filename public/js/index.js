@@ -662,7 +662,7 @@ async function loadTrips(line, tripId, minutesDelay) {
             await axios.get("/fermatetrip", {
                 params: {
                     trip: tripId,
-                    minutesDelay
+                    minutesDelay: 0
                 }
             })
         ).data;
