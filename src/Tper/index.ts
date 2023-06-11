@@ -52,6 +52,9 @@ export interface TperStop extends Stop {
     routes: string[];
 }
 
+export const isTperStop = (stop: Stop): stop is TperStop =>
+    (stop as TperStop).routes !== undefined;
+
 interface StopsObj {
     [stopId: string]: Omit<TperStop, "stopId">;
 }

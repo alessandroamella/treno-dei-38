@@ -7,7 +7,7 @@ import Trenitalia from "./Trenitalia";
 import Seta from "./Seta";
 import { Server } from "socket.io";
 import Position from "./interfaces/Position";
-import Tper, { TperStop } from "./Tper";
+import Tper, { TperStop, isTperStop } from "./Tper";
 import StopSearcher from "./utils/StopSearcher";
 import { AgencyType, isAgencyType, isNewsType } from "./interfaces/AgencyType";
 import moment from "moment";
@@ -19,6 +19,10 @@ import SanCesario from "./SanCesario";
 import Corsa from "./interfaces/Corsa";
 
 import "./config";
+import {
+    getRouteNameException,
+    isRouteNameException
+} from "./Tper/RouteNameExceptions";
 
 const s = new Seta();
 const t = new Tper();
@@ -97,6 +101,20 @@ app.get("/fermatadanome", async (req, res) => {
         sort: true,
         removeDuplicatesByName: true
     });
+
+    // Map valid stop names to route name exceptions
+    for (const _s of stops) {
+        for (const s of _s.stops) {
+            const tperStop = { ...s, stopName: "" };
+            if (isTperStop(tperStop)) {
+                tperStop.routes = tperStop.routes.map(
+                    e =>
+                        (isRouteNameException(e) && getRouteNameException(e)) ||
+                        e
+                );
+            }
+        }
+    }
 
     logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati con q=${q}`);
 
