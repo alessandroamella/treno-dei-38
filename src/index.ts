@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import express from "express";
 import path from "path";
 import { CronJob } from "cron";
@@ -12,7 +14,6 @@ import StopSearcher from "./utils/StopSearcher";
 import { AgencyType, isAgencyType, isNewsType } from "./interfaces/AgencyType";
 import moment from "moment";
 
-import "dotenv/config";
 import News from "./interfaces/News";
 import FerrovieInfo from "./FerrovieInfo";
 import SanCesario from "./SanCesario";

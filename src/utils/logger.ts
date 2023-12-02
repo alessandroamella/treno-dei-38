@@ -1,5 +1,6 @@
 import path from "path";
 import { createLogger, format, transports } from "winston";
+import "dotenv/config";
 
 const {
     combine,
