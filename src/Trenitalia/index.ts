@@ -138,14 +138,16 @@ class Trenitalia {
                 id: f.id,
                 dataProgrammata: f.partenza_teorica || f.programmata,
                 dataEffettiva: f.partenzaReale || f.arrivoReale,
-                transitato: f.actualFermataType.toString() === "1"
+                transitato: f.actualFermataType.toString() === "1",
+                soppressa: f.actualFermataType.toString() === "3"
             })),
             ritardo: statoTreno.ritardo,
             oraUltimoRilevamento: statoTreno.oraUltimoRilevamento,
             stazioneUltimoRilevamento:
                 statoTreno.stazioneUltimoRilevamento !== "--"
                     ? statoTreno.stazioneUltimoRilevamento
-                    : null
+                    : null,
+            info: statoTreno.subTitle
         };
     }
 

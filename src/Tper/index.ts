@@ -118,7 +118,7 @@ class Tper {
 
     private static async _getTripsForRoute(
         stopId: string,
-        route: string
+        route?: string
     ): Promise<Corsa[] | FnErr> {
         let trips: Corsa[];
         let rawData: any;
@@ -128,12 +128,14 @@ class Tper {
             res = await axios.get(Tper.realTimeUrl, {
                 params: {
                     fermata: stopId,
-                    linea: route,
+                    linea: route || " ",
                     oraHHMM: " "
                 }
             });
             logger.debug(
-                `TPER fetching data for stop ${stopId} - line ${route}`
+                `TPER fetching data for stop ${stopId} - line ${
+                    route || "--none--"
+                }`
             );
         } catch (err) {
             if (axios.isAxiosError(err)) {
@@ -272,27 +274,27 @@ class Tper {
 
     public async caricaCorse(
         stopId: string,
-        linee?: string[]
+        linee?: string[],
+        everyLine = false
     ): Promise<Corsa[] | null> {
         const corse: Corsa[] = [];
         const jobs = [];
 
-        if (!linee) {
+        if (!linee && everyLine) {
             const s = await this.cercaFermata(stopId);
             if (!s) {
                 logger.debug("TPER caricaCorse can't find stop");
                 return [];
             }
             linee = s.routes;
+            logger.debug(
+                `Carico corse TPER per fermata ${stopId} per linee ${linee.join(
+                    ", "
+                )}`
+            );
         }
 
-        logger.debug(
-            `Carico corse TPER per fermata ${stopId} per linee ${linee.join(
-                ", "
-            )}`
-        );
-
-        for (const linea of linee) {
+        for (const linea of linee ? linee : [undefined]) {
             const job = Tper._getTripsForRoute(stopId, linea)
                 .then(corsa => {
                     if (isFnErr(corsa)) {
@@ -325,6 +327,9 @@ class Tper {
                     "HH:mm"
                 ).unix()
         );
+
+        logger.debug("Corse TPER restituite w/o tempo reale:");
+        logger.debug(JSON.stringify(corse, null, 2));
 
         const mappedToDestination = await this.associateRealTimeInfoWithGTFS(
             stopId,

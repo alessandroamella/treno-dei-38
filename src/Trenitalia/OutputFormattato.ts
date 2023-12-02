@@ -9,8 +9,10 @@ export default interface OutputFormattato {
         dataProgrammata: number;
         dataEffettiva: number | null;
         transitato: boolean;
+        soppressa: boolean;
     }[];
     ritardo: number;
     oraUltimoRilevamento: number;
     stazioneUltimoRilevamento: string | null;
+    info: string;
 }

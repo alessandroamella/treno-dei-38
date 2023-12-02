@@ -65,7 +65,8 @@ async function treno(numTreno, idOrigine) {
         fermate,
         ritardo,
         oraUltimoRilevamento,
-        stazioneUltimoRilevamento
+        stazioneUltimoRilevamento,
+        info
     } = data;
 
     document.getElementById("treno").textContent = treno;
@@ -81,6 +82,9 @@ async function treno(numTreno, idOrigine) {
 
     document.getElementById("stazione-ultimo-rilevamento").textContent =
         stazioneUltimoRilevamento || "non so dove";
+
+    document.getElementById("treno-maggiori-info").textContent =
+        info || "nessuna";
 
     document.getElementById("treno-info").style.display = "block";
 
@@ -122,7 +126,10 @@ async function treno(numTreno, idOrigine) {
         if (f.transitato) {
             li.style.fontWeight = 600;
             li.style.backgroundColor = "#e9f5df";
-        } else li.style.backgroundColor = "#f5dfdf";
+        } else if (f.soppressa) {
+            li.style.textDecoration = "line-through";
+            li.style.backgroundColor = "#f0b9b9";
+        } else li.style.backgroundColor = "#eef5df";
 
         document.getElementById("fermate").appendChild(li);
     }
