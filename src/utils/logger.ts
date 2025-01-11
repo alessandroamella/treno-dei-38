@@ -31,7 +31,7 @@ const errorStackFormat = format(info => {
 });
 
 const prettyJson = printf(info => {
-    if (info.message.constructor === Object) {
+    if (info.message?.constructor === Object) {
         info.message = JSON.stringify(info.message, null, 4);
     }
     return `${info.level}: ${info.message}`;

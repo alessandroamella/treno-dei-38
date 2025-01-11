@@ -30,6 +30,10 @@ const loadingHTML = `
     </div>
 `;
 
+const urlParams = new URLSearchParams(window.location.search);
+const trenoParam = urlParams.get("treno");
+const daParam = urlParams.get("da");
+
 async function treno(numTreno, idOrigine) {
     const numTrenoValue =
         numTreno || document.getElementById("numero-treno").value || "2463";
@@ -789,6 +793,7 @@ async function connettiGps() {
                     "pk.eyJ1IjoiYml0cmV5IiwiYSI6ImNsMjZsMGZyejA2eXYza25xd3lvY3p2ZG0ifQ.G4c3HFBNVNPxAIbvaXQ2uQ"
             }
         ).addTo(map);
+        console.log("map", map);
     }
 
     setTimeout(() => {
@@ -880,56 +885,56 @@ async function getCurrentPosition() {
     });
 }
 
-// document.getElementById("from-gps").addEventListener("click", async e => {
-//     document.getElementById("from-gps").setAttribute("disabled", true);
-//     document.getElementById("findgps-loading").style.display = "block";
-//     document.getElementById("gps-status").textContent = "Ti cerco";
-//     try {
-//         if (!("geolocation" in navigator)) {
-//             throw new Error("GPS non disponibile su questo browser");
-//         }
-//         document.getElementById("gps-status").textContent =
-//             "Dimmi dove sei :))";
+document.getElementById("from-gps")?.addEventListener("click", async e => {
+    document.getElementById("from-gps").setAttribute("disabled", true);
+    document.getElementById("findgps-loading").style.display = "block";
+    document.getElementById("gps-status").textContent = "Ti cerco";
+    try {
+        if (!("geolocation" in navigator)) {
+            throw new Error("GPS non disponibile su questo browser");
+        }
+        document.getElementById("gps-status").textContent =
+            "Dimmi dove sei :))";
 
-//         const coords = await getCurrentPosition();
-//         console.log(coords);
-//         const { latitude, longitude, accuracy } = coords;
+        const coords = await getCurrentPosition();
+        console.log(coords);
+        const { latitude, longitude, accuracy } = coords;
 
-//         document.getElementById(
-//             "gps-status"
-//         ).textContent = `👌 sei a ${latitude}, ${longitude} (± ${accuracy}m)`;
-//     } catch (err) {
-//         let html;
-//         if (err instanceof GeolocationPositionError) {
-//             if (err.code === 1) {
-//                 html =
-//                     '<p class="text-center mb-0">mi devi dare i permessi coglione!!</p>' +
-//                     `<img
-//                         src="https://puu.sh/JEXpr/bd48c4d977.png"
-//                         loading="lazy"
-//                         id="gps-howto"
-//                         class="mt-1"
-//                         style="width: 300px"
-//                     />`;
-//             } else if (err.code === 2) {
-//                 html = "hai il dispositivo brocco, non mi da un cazzo";
-//             } else if (err.code === 3) {
-//                 html = "hai il dispositivo ritardato (timeout), mi spiace";
-//             }
-//         } else {
-//             html = "errore ambiguo: " + (err.message || err.toString());
-//         }
-//         document.getElementById("gps-status").innerHTML = html || err;
-//     } finally {
-//         document.getElementById("from-gps").removeAttribute("disabled");
-//         document.getElementById("findgps-loading").style.display = "none";
-//     }
-//     document.getElementById("from-gps").removeAttribute("disabled");
+        document.getElementById(
+            "gps-status"
+        ).innerHTML = `👌 sei a ${latitude}, ${longitude} (± ${accuracy}m)<br /><span style="color: gray">(p.s. non ancora implementato sry)</span>`;
+    } catch (err) {
+        let html;
+        if (err instanceof GeolocationPositionError) {
+            if (err.code === 1) {
+                html =
+                    '<p class="text-center mb-0">mi devi dare i permessi coglione!!</p>' +
+                    `<img
+                        src="https://puu.sh/JEXpr/bd48c4d977.png"
+                        loading="lazy"
+                        id="gps-howto"
+                        class="mt-1"
+                        style="width: 300px"
+                    />`;
+            } else if (err.code === 2) {
+                html = "hai il dispositivo brocco, non mi da un cazzo";
+            } else if (err.code === 3) {
+                html = "hai il dispositivo ritardato (timeout), mi spiace";
+            }
+        } else {
+            html = "errore ambiguo: " + (err.message || err.toString());
+        }
+        document.getElementById("gps-status").innerHTML = html || err;
+    } finally {
+        document.getElementById("from-gps").removeAttribute("disabled");
+        document.getElementById("findgps-loading").style.display = "none";
+    }
+    document.getElementById("from-gps").removeAttribute("disabled");
 
-//     e.target.value.startsWith("MO")
-//         ? bus(2, e.target.value, undefined, undefined, "seta")
-//         : bus(2, e.target.value, undefined, undefined, "tper");
-// });
+    e.target.value.startsWith("MO")
+        ? bus(2, e.target.value, undefined, undefined, "seta")
+        : bus(2, e.target.value, undefined, undefined, "tper");
+});
 
 function isBefore(hhmmStr) {
     return dateFns.isBefore(new Date(), _parseHHMM(hhmmStr));
@@ -1173,7 +1178,9 @@ async function notizie() {
 sanCesario();
 notizie();
 
-if (isBefore("08:05")) {
+if (trenoParam && daParam) {
+    treno(trenoParam, daParam);
+} else if (isBefore("08:05")) {
     treno(3907, "S05037");
 } else if (isBefore("08:20")) {
     treno(17425, "S05037");
