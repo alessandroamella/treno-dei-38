@@ -2,61 +2,143 @@ import axios from "axios";
 import { logger } from "../utils/logger";
 import moment, { Moment } from "moment";
 import News from "../interfaces/News";
-import { SanCesarioNewsItem, rssParser } from "./News";
 
+/**
+ * Interface for the news items returned by the San Cesario (Plone) API.
+ */
+interface PloneNewsItem {
+  "@id": string;
+  title: string;
+  description: string;
+  effective: string | null; // The publication date
+  created: string; // The creation date, used as a fallback
+}
+
+/**
+ * Interface for the full API response from a Plone content endpoint.
+ */
+interface PloneApiResponse {
+  items: PloneNewsItem[];
+  // ... other properties of the response exist but are not needed.
+}
+
+/**
+ * A class to fetch and manage news from the Comune di San Cesario sul Panaro website.
+ * It aggregates news from three different categories: Notizie, Comunicati, and Avvisi.
+ */
 class SanCesario {
-    private static newsUrl =
-        "http://www.comune.sancesariosulpanaro.mo.it/servizi/feed/ExpRSS_servizio.aspx?tabellaservizio=T_notizie%7ccampo=Categoria_Notizie%7cfiltrocampi=";
-    private static newsCache: News[] | null = null;
-    private static newsCacheDate: Moment | null = null;
+  // An array of news sources, making it easy to manage and extend.
+  // The `fullobjects=1` parameter is added to ensure the API returns detailed item data, including dates.
+  private static sources = [
+    {
+      url: "https://www.comune.sancesariosulpanaro.mo.it/++api++/novita/notizie?fullobjects=1",
+      type: "Notizia",
+    },
+    {
+      url: "https://www.comune.sancesariosulpanaro.mo.it/++api++/novita/comunicati?fullobjects=1",
+      type: "Comunicato",
+    },
+    {
+      url: "https://www.comune.sancesariosulpanaro.mo.it/++api++/novita/avvisi?fullobjects=1",
+      type: "Avviso",
+    },
+  ];
 
-    public static async getNews(): Promise<News[] | null> {
-        if (
-            !SanCesario.newsCache ||
-            !SanCesario.newsCacheDate ||
-            moment().diff(SanCesario.newsCacheDate, "minutes") > 10
-        ) {
-            logger.info("Carico news SanCesario");
-            try {
-                // SanCesario fatta sempre bene, certificato non valido
-                const { data } = await axios.get(SanCesario.newsUrl);
+  private static newsCache: News[] | null = null;
+  private static newsCacheDate: Moment | null = null;
+  private static readonly CACHE_DURATION_MINUTES = 10;
 
-                if (!data) return null;
+  /**
+   * Checks if the cached data is still valid.
+   */
+  private static isCacheValid(): boolean {
+    return (
+      !!this.newsCache &&
+      !!this.newsCacheDate &&
+      moment().diff(this.newsCacheDate, "minutes") < this.CACHE_DURATION_MINUTES
+    );
+  }
 
-                const feed = await rssParser.parseString(data);
+  /**
+   * Fetches news from all sources, combines them, and sorts them by date.
+   * Uses a cache to avoid excessive requests.
+   * @returns A promise that resolves to an array of News items or null if an error occurs.
+   */
+  public static async getNews(): Promise<News[] | null> {
+    if (this.isCacheValid()) {
+      logger.debug("News SanCesario da cache");
+      return this.newsCache;
+    }
 
-                const news = SanCesario._mapToNews(feed.items);
+    logger.info("Carico news SanCesario da API");
 
-                SanCesario.newsCache = news;
-                SanCesario.newsCacheDate = moment();
+    try {
+      // Create an array of GET request promises for all sources.
+      const promises = this.sources.map((source) =>
+        axios.get<PloneApiResponse>(source.url)
+      );
 
-                logger.info("SanCesario fetched " + news.length + " news");
+      // Use Promise.allSettled to fetch all sources concurrently.
+      // This ensures that if one source fails, the others can still be processed.
+      const results = await Promise.allSettled(promises);
 
-                return news;
-            } catch (err) {
-                logger.error("Error while fetching SanCesario news");
-                logger.error(err);
-                return null;
-            }
+      let allNews: News[] = [];
+
+      results.forEach((result, index) => {
+        const source = this.sources[index];
+        if (result.status === "fulfilled") {
+          // Check if the response contains the expected 'items' array.
+          if (result.value.data?.items) {
+            const parsedNews = this._mapJsonToNews(
+              result.value.data.items,
+              source.type
+            );
+            allNews = allNews.concat(parsedNews);
+          }
         } else {
-            logger.debug("News SanCesario da cache");
-            return SanCesario.newsCache;
+          // Log an error if a specific source failed to load.
+          logger.error(`Error fetching news from ${source.url}`, result.reason);
         }
+      });
+
+      // Sort all aggregated news items by date in descending order.
+      allNews.sort((a, b) => b.date.diff(a.date));
+
+      // Update the cache with the new data.
+      this.newsCache = allNews;
+      this.newsCacheDate = moment();
+
+      logger.info(`SanCesario fetched ${allNews.length} total news items`);
+
+      return allNews;
+    } catch (err) {
+      logger.error("A critical error occurred while fetching SanCesario news", err);
+      return null;
+    }
+  }
+
+  /**
+   * Maps the raw JSON items from the Plone API to the standardized News interface.
+   * @param items - An array of items from the API response.
+   * @param type - The category of the news (e.g., 'Notizia', 'Comunicato').
+   * @returns An array of formatted News items.
+   */
+  private static _mapJsonToNews(items: PloneNewsItem[], type: string): News[] {
+    if (!items) {
+      return [];
     }
 
-    private static _mapToNews(items: SanCesarioNewsItem[]): News[] {
-        const news: News[] = items
-            .filter(item => item.title !== undefined)
-            .map(item => ({
-                title: item.title!,
-                agency: "sancesario",
-                date: moment(item.pubDate),
-                type: item.category,
-                url: item.link
-            }));
-
-        return news;
-    }
+    return items
+      .filter((item) => item?.title && item["@id"])
+      .map((item) => ({
+        title: item.title,
+        agency: "sancesario",
+        // Use the 'effective' date if available, otherwise fall back to 'created' date.
+        date: moment(item.effective || item.created),
+        type: type,
+        url: item["@id"],
+      }));
+  }
 }
 
 export default SanCesario;

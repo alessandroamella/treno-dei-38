@@ -479,11 +479,12 @@ class Tper {
         const newsList: News[] = [];
 
         items.forEach(item => {
+            // console.log("TPER news item:", item);
             const news: News = {
                 title: item.title,
                 agency: "tper",
                 date: moment(item.isoDate),
-                type: item.categories?.[0]._ || "Uncategorized",
+                type: item.categories?.[0]._ || item.creator || "Uncategorized",
                 url: item.link
             };
             newsList.push(news);
