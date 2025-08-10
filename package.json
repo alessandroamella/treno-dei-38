@@ -7,8 +7,8 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "dev": "nodemon",
         "build": "rimraf ./build && tsc",
-        "start": "pnpm run build && node build/index.js",
-        "lint": "pnpm biome check --fix"
+        "start": "npm run build && node build/index.js",
+        "lint": "npm run biome check --fix"
     },
     "author": "Bitrey",
     "license": "ISC",
