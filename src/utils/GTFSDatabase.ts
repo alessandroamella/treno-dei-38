@@ -1,13 +1,13 @@
+import path from 'node:path';
 import Database from 'better-sqlite3';
-import path from 'path';
-import { logger } from './logger';
-import {
+import type {
+    CalendarDates as GTFSCalendarDates,
     Route as GTFSRoute,
-    Trip as GTFSTrip,
     Stop as GTFSStop,
     StopTime as GTFSStopTime,
-    CalendarDates as GTFSCalendarDates
-} from "gtfs-types";
+    Trip as GTFSTrip,
+} from 'gtfs-types';
+import { logger } from './logger';
 
 export interface GTFS {
     routes: GTFSRoute[];
@@ -38,7 +38,7 @@ export class GTFSDatabase {
     private initializeTables(): void {
         // Enable WAL mode for better performance
         this.db.pragma('journal_mode = WAL');
-        
+
         // Create tables with proper schemas and indexes
         this.db.exec(`
             CREATE TABLE IF NOT EXISTS routes (
@@ -240,7 +240,9 @@ export class GTFSDatabase {
         });
 
         insertMany(stopTimes);
-        logger.debug(`Inserted ${stopTimes.length} stop times into SQLite database`);
+        logger.debug(
+            `Inserted ${stopTimes.length} stop times into SQLite database`
+        );
     }
 
     public insertCalendarDates(calendarDates: GTFSCalendarDates[]): void {
@@ -249,18 +251,22 @@ export class GTFSDatabase {
             VALUES (?, ?, ?)
         `);
 
-        const insertMany = this.db.transaction((calendarDates: GTFSCalendarDates[]) => {
-            for (const calendarDate of calendarDates) {
-                stmt.run(
-                    calendarDate.service_id,
-                    calendarDate.date,
-                    calendarDate.exception_type
-                );
+        const insertMany = this.db.transaction(
+            (calendarDates: GTFSCalendarDates[]) => {
+                for (const calendarDate of calendarDates) {
+                    stmt.run(
+                        calendarDate.service_id,
+                        calendarDate.date,
+                        calendarDate.exception_type
+                    );
+                }
             }
-        });
+        );
 
         insertMany(calendarDates);
-        logger.debug(`Inserted ${calendarDates.length} calendar dates into SQLite database`);
+        logger.debug(
+            `Inserted ${calendarDates.length} calendar dates into SQLite database`
+        );
     }
 
     // Query methods
@@ -271,7 +277,9 @@ export class GTFSDatabase {
     }
 
     public findStopsByName(name: string): GTFSStop[] {
-        const stmt = this.db.prepare('SELECT * FROM stops WHERE stop_name LIKE ? ORDER BY stop_name');
+        const stmt = this.db.prepare(
+            'SELECT * FROM stops WHERE stop_name LIKE ? ORDER BY stop_name'
+        );
         return stmt.all(`%${name}%`) as GTFSStop[];
     }
 
@@ -283,17 +291,23 @@ export class GTFSDatabase {
     public findTripsByRouteIds(routeIds: string[]): GTFSTrip[] {
         if (routeIds.length === 0) return [];
         const placeholders = routeIds.map(() => '?').join(',');
-        const stmt = this.db.prepare(`SELECT * FROM trips WHERE route_id IN (${placeholders})`);
+        const stmt = this.db.prepare(
+            `SELECT * FROM trips WHERE route_id IN (${placeholders})`
+        );
         return stmt.all(...routeIds) as GTFSTrip[];
     }
 
     public findStopTimesForTrip(tripId: string): GTFSStopTime[] {
-        const stmt = this.db.prepare('SELECT * FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence ASC');
+        const stmt = this.db.prepare(
+            'SELECT * FROM stop_times WHERE trip_id = ? ORDER BY stop_sequence ASC'
+        );
         return stmt.all(tripId) as GTFSStopTime[];
     }
 
     public findStopTimesForStop(stopId: string): GTFSStopTime[] {
-        const stmt = this.db.prepare('SELECT * FROM stop_times WHERE stop_id = ? ORDER BY arrival_time ASC');
+        const stmt = this.db.prepare(
+            'SELECT * FROM stop_times WHERE stop_id = ? ORDER BY arrival_time ASC'
+        );
         return stmt.all(stopId) as GTFSStopTime[];
     }
 
@@ -321,7 +335,9 @@ export class GTFSDatabase {
     }
 
     public getAllRoutes(): GTFSRoute[] {
-        const stmt = this.db.prepare('SELECT * FROM routes ORDER BY route_short_name');
+        const stmt = this.db.prepare(
+            'SELECT * FROM routes ORDER BY route_short_name'
+        );
         return stmt.all() as GTFSRoute[];
     }
 
@@ -331,12 +347,16 @@ export class GTFSDatabase {
     }
 
     public getAllStopTimes(): GTFSStopTime[] {
-        const stmt = this.db.prepare('SELECT * FROM stop_times ORDER BY trip_id, stop_sequence');
+        const stmt = this.db.prepare(
+            'SELECT * FROM stop_times ORDER BY trip_id, stop_sequence'
+        );
         return stmt.all() as GTFSStopTime[];
     }
 
     public getAllCalendarDates(): GTFSCalendarDates[] {
-        const stmt = this.db.prepare('SELECT * FROM calendar_dates ORDER BY service_id, date');
+        const stmt = this.db.prepare(
+            'SELECT * FROM calendar_dates ORDER BY service_id, date'
+        );
         return stmt.all() as GTFSCalendarDates[];
     }
 

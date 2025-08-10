@@ -1,6 +1,6 @@
-import path from "path";
-import { createLogger, format, transports } from "winston";
-import "dotenv/config";
+import path from 'node:path';
+import { createLogger, format, transports } from 'winston';
+import 'dotenv/config';
 
 const {
     combine,
@@ -11,11 +11,11 @@ const {
     printf,
     splat,
     json,
-    metadata
+    metadata,
 } = format;
 
-const combinedLogsFile = path.join("./logs/combined.log");
-const errorsLogsFile = path.join("./logs/error.log");
+const combinedLogsFile = path.join('./logs/combined.log');
+const errorsLogsFile = path.join('./logs/error.log');
 
 const errorStackFormat = format(info => {
     if (info instanceof Error) {
@@ -23,8 +23,8 @@ const errorStackFormat = format(info => {
             ...info,
             ...{
                 stack: info.stack,
-                message: info.message
-            }
+                message: info.message,
+            },
         };
     }
     return info;
@@ -39,12 +39,12 @@ const prettyJson = printf(info => {
 
 export const logger = createLogger({
     // change level if in dev environment versus production
-    level: process.env.NODE_ENV === "production" ? "info" : "debug",
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     format: combine(
-        label({ label: path.basename(require.main?.filename || "") }),
-        timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+        label({ label: path.basename(require.main?.filename || '') }),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         errorStackFormat(),
-        metadata({ fillExcept: ["message", "level", "timestamp", "label"] })
+        metadata({ fillExcept: ['message', 'level', 'timestamp', 'label'] })
     ),
     transports: [
         new transports.Console({
@@ -57,7 +57,7 @@ export const logger = createLogger({
                 errorStackFormat(),
                 splat(),
                 prettyJson
-            )
+            ),
         }),
         new transports.File({
             filename: combinedLogsFile,
@@ -68,11 +68,11 @@ export const logger = createLogger({
                 json(),
                 timestamp()
             ),
-            maxsize: 10000000
+            maxsize: 10000000,
         }),
         new transports.File({
             filename: errorsLogsFile,
-            level: "error",
+            level: 'error',
             format: combine(
                 json(),
                 errors(),
@@ -80,13 +80,13 @@ export const logger = createLogger({
                 json(),
                 timestamp()
             ),
-            maxsize: 20000000
-        })
-    ]
+            maxsize: 20000000,
+        }),
+    ],
 });
 
 export class LoggerStream {
-    public write(message: string, encoding?: string) {
+    public write(message: string) {
         logger.info(message);
     }
 }

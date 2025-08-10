@@ -1,8 +1,8 @@
-import OutputFormattato from "../Trenitalia/OutputFormattato";
+import type OutputFormattato from '../Trenitalia/OutputFormattato';
 
 type _TrenoTabellone = Omit<
     OutputFormattato,
-    "fermate" | "origine" | "oraUltimoRilevamento" | "stazioneUltimoRilevamento"
+    'fermate' | 'origine' | 'oraUltimoRilevamento' | 'stazioneUltimoRilevamento'
 >;
 
 interface TrenoTabellone extends _TrenoTabellone {

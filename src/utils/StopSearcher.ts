@@ -1,9 +1,10 @@
-import Fuse from "fuse.js";
-import { AgencyType, CombinedStop } from "../interfaces/AgencyType";
-import { logger } from "./logger";
-import Seta from "../Seta";
-import Stop from "../Seta/Stop";
-import Tper, { TperStop } from "../Tper";
+import type Fuse from 'fuse.js';
+import type { AgencyType, CombinedStop } from '../interfaces/AgencyType';
+import type Seta from '../Seta';
+import type Stop from '../Seta/Stop';
+import type Tper from '../Tper';
+import type { TperStop } from '../Tper';
+import { logger } from './logger';
 
 interface FindByNameArgs {
     q: string;
@@ -28,7 +29,7 @@ type StopResult = CombinedStop & { agency: AgencyType };
 interface SearchedStop {
     stopName: string;
     // agency: AgencyType;
-    stops: Omit<StopResult, "stopName">[];
+    stops: Omit<StopResult, 'stopName'>[];
 }
 
 export default class StopSearcher {
@@ -44,17 +45,17 @@ export default class StopSearcher {
         q,
         limit,
         sort,
-        removeDuplicatesByName
+        removeDuplicatesByName,
     }: FindByNameArgs): Promise<SearchedStop[]> {
         const _s = await this.s.cercaFermatePerNome(q);
         const _t = await this.t.cercaFermatePerNome(q);
         let stops: Fuse.FuseResult<StopResult>[] = [
             ...(<Fuse.FuseResult<Stop & { agency: AgencyType }>[]>(
-                _s.map(e => ({ ...e, item: { ...e.item, agency: "seta" } }))
+                _s.map(e => ({ ...e, item: { ...e.item, agency: 'seta' } }))
             )),
             ...(<Fuse.FuseResult<TperStop & { agency: AgencyType }>[]>(
-                _t.map(e => ({ ...e, item: { ...e.item, agency: "tper" } }))
-            ))
+                _t.map(e => ({ ...e, item: { ...e.item, agency: 'tper' } }))
+            )),
         ];
 
         if (sort) stops.sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
@@ -84,7 +85,7 @@ export default class StopSearcher {
                 _searchedStops.push({
                     stopName: stop.stopName,
                     // agency: stop.agency,
-                    stops: [stop]
+                    stops: [stop],
                 });
             }
         }
@@ -94,32 +95,32 @@ export default class StopSearcher {
 
     public async findById({
         q,
-        agency
+        agency,
     }: FindByIdArgs): Promise<StopResult | null> {
-        if (agency === "seta" || !agency) {
+        if (agency === 'seta' || !agency) {
             const _s = await this.s.cercaFermata(q);
-            if (_s) return { ..._s, agency: "seta" };
+            if (_s) return { ..._s, agency: 'seta' };
         }
-        if (agency === "tper" || !agency) {
+        if (agency === 'tper' || !agency) {
             const _t = await this.t.cercaFermata(q);
-            if (_t) return { ..._t, agency: "tper" };
+            if (_t) return { ..._t, agency: 'tper' };
         }
         return null;
     }
 
     public async findMultipleById({
         q,
-        agency
+        agency,
     }: FindMultipleByIdsArgs): Promise<StopResult[]> {
         const stops: StopResult[] = [];
         for (const id of q) {
-            if (agency === "seta" || !agency) {
+            if (agency === 'seta' || !agency) {
                 const _s = await this.s.cercaFermata(id);
-                if (_s) stops.push({ ..._s, agency: "seta" });
+                if (_s) stops.push({ ..._s, agency: 'seta' });
             }
-            if (agency === "tper" || !agency) {
+            if (agency === 'tper' || !agency) {
                 const _t = await this.t.cercaFermata(id);
-                if (_t) stops.push({ ..._t, agency: "tper" });
+                if (_t) stops.push({ ..._t, agency: 'tper' });
             }
         }
         return stops;

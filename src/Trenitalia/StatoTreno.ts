@@ -1,15 +1,15 @@
-import Fermata from "./Fermata";
+import type Fermata from './Fermata';
 
 export default interface StatoTreno {
     tipoTreno: string;
-    orientamento: any;
+    orientamento: unknown;
     codiceCliente: number;
-    fermateSoppresse: any;
-    dataPartenza: any;
+    fermateSoppresse: unknown;
+    dataPartenza: unknown;
     fermate: Fermata[];
-    anormalita: any;
-    provvedimenti: any;
-    segnalazioni: any;
+    anormalita: unknown;
+    provvedimenti: unknown;
+    segnalazioni: unknown;
     oraUltimoRilevamento: number;
     stazioneUltimoRilevamento: string;
     idDestinazione: string;
@@ -18,20 +18,20 @@ export default interface StatoTreno {
     hasProvvedimenti: boolean;
     descOrientamento: string[];
     compOraUltimoRilevamento: `${number}:${number}`;
-    motivoRitardoPrevalente: any;
+    motivoRitardoPrevalente: unknown;
     descrizioneVCO: string;
-    materiale_label: any;
+    materiale_label: unknown;
     numeroTreno: number;
     categoria: string;
-    categoriaDescrizione: any;
+    categoriaDescrizione: unknown;
     origine: string;
-    codOrigine: any;
+    codOrigine: string;
     destinazione: string;
-    codDestinazione: any;
-    origineEstera: any;
-    destinazioneEstera: any;
-    oraPartenzaEstera: any;
-    oraArrivoEstera: any;
+    codDestinazione: unknown;
+    origineEstera: unknown;
+    destinazioneEstera: unknown;
+    oraPartenzaEstera: unknown;
+    oraArrivoEstera: unknown;
     tratta: number;
     regione: number;
     origineZero: string;
@@ -39,29 +39,29 @@ export default interface StatoTreno {
     orarioPartenzaZero: number;
     orarioArrivoZero: number;
     circolante: boolean;
-    binarioEffettivoArrivoCodice: any;
-    binarioEffettivoArrivoDescrizione: any;
-    binarioEffettivoArrivoTipo: any;
-    binarioProgrammatoArrivoCodice: any;
-    binarioProgrammatoArrivoDescrizione: any;
-    binarioEffettivoPartenzaCodice: any;
-    binarioEffettivoPartenzaDescrizione: any;
-    binarioEffettivoPartenzaTipo: any;
-    binarioProgrammatoPartenzaCodice: any;
-    binarioProgrammatoPartenzaDescrizione: any;
+    binarioEffettivoArrivoCodice: unknown;
+    binarioEffettivoArrivoDescrizione: unknown;
+    binarioEffettivoArrivoTipo: unknown;
+    binarioProgrammatoArrivoCodice: unknown;
+    binarioProgrammatoArrivoDescrizione: unknown;
+    binarioEffettivoPartenzaCodice: unknown;
+    binarioEffettivoPartenzaDescrizione: unknown;
+    binarioEffettivoPartenzaTipo: unknown;
+    binarioProgrammatoPartenzaCodice: unknown;
+    binarioProgrammatoPartenzaDescrizione: unknown;
     subTitle: string;
     esisteCorsaZero: string;
     inStazione: boolean;
     haCambiNumero: boolean;
     nonPartito: boolean;
     provvedimento: number;
-    riprogrammazione: any;
+    riprogrammazione: unknown;
     orarioPartenza: number;
     orarioArrivo: number;
-    stazionePartenza: any;
-    stazioneArrivo: any;
-    statoTreno: any;
-    corrispondenze: any;
+    stazionePartenza: unknown;
+    stazioneArrivo: unknown;
+    statoTreno: unknown;
+    corrispondenze: unknown;
     servizi: [];
     ritardo: number;
     tipoProdotto: string;
@@ -87,7 +87,7 @@ export default interface StatoTreno {
         string,
         string,
         string,
-        string
+        string,
     ];
     compRitardoAndamento: [
         string,
@@ -98,7 +98,7 @@ export default interface StatoTreno {
         string,
         string,
         string,
-        string
+        string,
     ];
     compInStazionePartenza: string[];
     compInStazioneArrivo: string[];

@@ -1,12 +1,12 @@
-import axios from "axios";
-import { logger } from "../utils/logger";
-import moment, { Moment } from "moment";
-import News from "../interfaces/News";
-import { FerrovieNewsItem, rssParser } from "./News";
+import axios from 'axios';
+import moment, { type Moment } from 'moment';
+import type News from '../interfaces/News';
+import { logger } from '../utils/logger';
+import { type FerrovieNewsItem, rssParser } from './News';
 
 class FerrovieInfo {
     private static newsUrl =
-        "https://www.ferrovie.info/index.php/it/?format=feed&type=rss";
+        'https://www.ferrovie.info/index.php/it/?format=feed&type=rss';
     private static newsCache: News[] | null = null;
     private static newsCacheDate: Moment | null = null;
 
@@ -14,9 +14,9 @@ class FerrovieInfo {
         if (
             !FerrovieInfo.newsCache ||
             !FerrovieInfo.newsCacheDate ||
-            moment().diff(FerrovieInfo.newsCacheDate, "minutes") > 10
+            moment().diff(FerrovieInfo.newsCacheDate, 'minutes') > 10
         ) {
-            logger.info("Carico news FerrovieInfo");
+            logger.info('Carico news FerrovieInfo');
             try {
                 // FerrovieInfo fatta sempre bene, certificato non valido
                 const { data } = await axios.get(FerrovieInfo.newsUrl);
@@ -30,16 +30,16 @@ class FerrovieInfo {
                 FerrovieInfo.newsCache = news;
                 FerrovieInfo.newsCacheDate = moment();
 
-                logger.info("FerrovieInfo fetched " + news.length + " news");
+                logger.info(`FerrovieInfo fetched ${news.length} news`);
 
                 return news;
             } catch (err) {
-                logger.error("Error while reading FerrovieInfo news");
+                logger.error('Error while reading FerrovieInfo news');
                 logger.error(err);
                 return null;
             }
         } else {
-            logger.debug("News FerrovieInfo da cache");
+            logger.debug('News FerrovieInfo da cache');
             return FerrovieInfo.newsCache;
         }
     }
@@ -49,10 +49,10 @@ class FerrovieInfo {
             .filter(item => item.title !== undefined)
             .map(item => ({
                 title: item.title!,
-                agency: "ferrovie.info",
+                agency: 'ferrovie.info',
                 date: moment(item.pubDate),
                 type: item.category,
-                url: item.link
+                url: item.link,
             }));
 
         return news;

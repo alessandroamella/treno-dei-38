@@ -4,12 +4,12 @@ interface RawData {
         services: {
             service: string;
             arrival: string;
-            type: "planned" | "realtime";
+            type: 'planned' | 'realtime';
             destination: string;
-            fleetCode: "MO";
+            fleetCode: 'MO';
             dutyId: string;
-            busnum: string | "";
-            serviceType: "UR" | "EX";
+            busnum: string | '';
+            serviceType: 'UR' | 'EX';
             occupancyStatus: string | null;
             codice_corsa: string;
             posti_totali: number | null;

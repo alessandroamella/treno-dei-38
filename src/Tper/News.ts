@@ -1,8 +1,6 @@
-import Parser, { Item } from "rss-parser";
+import Parser, { type Item } from 'rss-parser';
 
-type TperNewsFeed = {};
-
-export interface TperNewsItem extends Omit<Item, "categories"> {
+export interface TperNewsItem extends Omit<Item, 'categories'> {
     creator: string;
     title: string;
     link: string;
@@ -16,9 +14,9 @@ export interface TperNewsItem extends Omit<Item, "categories"> {
     content: string;
 }
 
-export const rssParser: Parser<TperNewsFeed, TperNewsItem> = new Parser({
+export const rssParser: Parser<unknown, TperNewsItem> = new Parser({
     customFields: {
         feed: [],
-        item: ["creator", "title", "link", "pubDate", "categories", "content"]
-    }
+        item: ['creator', 'title', 'link', 'pubDate', 'categories', 'content'],
+    },
 });

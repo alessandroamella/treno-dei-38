@@ -1,4 +1,4 @@
-import { Trip as GTFSTrip } from "gtfs-types";
+import type { Trip as GTFSTrip } from 'gtfs-types';
 
 interface Corsa {
     id: string;

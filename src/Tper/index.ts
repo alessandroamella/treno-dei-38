@@ -1,32 +1,26 @@
-import axios from "axios";
-import moment, { Moment } from "moment-timezone";
-import { logger } from "../utils/logger";
-import { parseStringPromise } from "xml2js";
-import Corsa from "../interfaces/Corsa";
-import Stop from "../Seta/Stop";
-import Fuse from "fuse.js";
-import { TperNewsItem, rssParser } from "./News";
-import { fetchUrlWithCurl } from "../utils/curlFetch";
-import News from "../interfaces/News";
-import {
-    Route as GTFSRoute,
-    Trip as GTFSTrip,
-    Stop as GTFSStop,
-    StopTime as GTFSStopTime,
-    CalendarDates as GTFSCalendarDates
-} from "gtfs-types";
-import JSZip from "jszip";
-import CsvParser from "../utils/CsvParser";
-import { getRouteNameException } from "./RouteNameExceptions";
-import GTFSDatabase from "../utils/GTFSDatabase";
+import axios, { type AxiosResponse } from 'axios';
+import Fuse from 'fuse.js';
+import type { Stop as GTFSStop, Trip as GTFSTrip } from 'gtfs-types';
+import JSZip from 'jszip';
+import moment, { type Moment } from 'moment-timezone';
+import { parseStringPromise } from 'xml2js';
+import type Corsa from '../interfaces/Corsa';
+import type News from '../interfaces/News';
+import type Stop from '../Seta/Stop';
+import CsvParser from '../utils/CsvParser';
+import { fetchUrlWithCurl } from '../utils/curlFetch';
+import GTFSDatabase from '../utils/GTFSDatabase';
+import { logger } from '../utils/logger';
+import { rssParser, type TperNewsItem } from './News';
+import { getRouteNameException } from './RouteNameExceptions';
 
-interface GTFS {
-    routes: GTFSRoute[];
-    trips: GTFSTrip[];
-    stops: GTFSStop[];
-    stop_times: GTFSStopTime[];
-    calendar_dates: GTFSCalendarDates[];
-}
+// interface GTFS {
+//     routes: GTFSRoute[];
+//     trips: GTFSTrip[];
+//     stops: GTFSStop[];
+//     stop_times: GTFSStopTime[];
+//     calendar_dates: GTFSCalendarDates[];
+// }
 
 interface CustomErr {
     msg: string;
@@ -39,8 +33,8 @@ interface FnErr {
 
 interface OpenDataTable {
     $: {
-        "diffgr:id": string;
-        "msdata:rowOrder": string;
+        'diffgr:id': string;
+        'msdata:rowOrder': string;
     };
     nome_file: string[];
     versione: string[];
@@ -54,7 +48,7 @@ export const isTperStop = (stop: Stop): stop is TperStop =>
     (stop as TperStop).routes !== undefined;
 
 interface StopsObj {
-    [stopId: string]: Omit<TperStop, "stopId">;
+    [stopId: string]: Omit<TperStop, 'stopId'>;
 }
 
 interface TripStops {
@@ -63,17 +57,18 @@ interface TripStops {
     realTime?: Moment;
 }
 
-function isFnErr(err: unknown): err is FnErr {
+// biome-ignore lint/suspicious/noExplicitAny: checking type
+function isFnErr(err: any): err is FnErr {
     return (
-        typeof err === "object" &&
+        typeof err === 'object' &&
         err !== null &&
-        "err" in err &&
-        typeof (err as any).err === "object" &&
-        (err as any).err !== null &&
-        "msg" in (err as any).err &&
-        "status" in (err as any).err &&
-        typeof (err as any).err.msg === "string" &&
-        typeof (err as any).err.status === "number"
+        'err' in err &&
+        typeof err.err === 'object' &&
+        err.err !== null &&
+        'msg' in err.err &&
+        'status' in err.err &&
+        typeof err.err.msg === 'string' &&
+        typeof err.err.status === 'number'
     );
 }
 
@@ -85,14 +80,14 @@ class Tper {
     private static gtfsDatabase = GTFSDatabase.getInstance();
 
     private static realTimeUrl =
-        "https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus";
+        'https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus';
 
     private static openDataVersionUrl =
-        "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataVersione";
+        'https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataVersione';
     private static lineeFermateUrl =
-        "https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate";
+        'https://solwsweb.tper.it/web-services/open-data.asmx/OpenDataLineeFermate';
 
-    private static newsUrl = "https://www.tper.it/taxonomy/term/33/all/rss.xml";
+    private static newsUrl = 'https://www.tper.it/taxonomy/term/33/all/rss.xml';
     private static newsCache: News[] | null = null;
     private static newsCacheDate: Moment | null = null;
 
@@ -116,37 +111,38 @@ class Tper {
         route?: string
     ): Promise<Corsa[] | FnErr> {
         let trips: Corsa[];
-        let rawData: any;
+        let rawData: string;
 
-        let res;
+        let res: AxiosResponse<typeof rawData>;
+
         try {
             res = await axios.get(Tper.realTimeUrl, {
                 params: {
                     fermata: stopId,
-                    linea: route || " ",
-                    oraHHMM: " "
-                }
+                    linea: route || ' ',
+                    oraHHMM: ' ',
+                },
             });
             logger.debug(
                 `TPER fetching data for stop ${stopId} - line ${
-                    route || "--none--"
+                    route || '--none--'
                 }`
             );
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                logger.debug("TPER data axios error:");
+                logger.debug('TPER data axios error:');
                 logger.debug(err.response?.data || err.response || err.code);
                 // DEBUG - MAP ERROR!!
 
                 // data = err.response?.data || "Unknown error";
             } else {
-                logger.error("TPER data unknown error:");
+                logger.error('TPER data unknown error:');
                 logger.error(err);
 
                 // data = "Unknown error";
             }
             return {
-                err: { msg: "Error while fetching stop", status: 500 }
+                err: { msg: 'Error while fetching stop', status: 500 },
             } as FnErr;
         }
 
@@ -155,93 +151,93 @@ class Tper {
         rawData = res.data;
 
         if (!rawData) {
-            logger.error("TPER rawData is falsy");
+            logger.error('TPER rawData is falsy');
             return {
-                err: { msg: "Error while loading data", status: 500 }
+                err: { msg: 'Error while loading data', status: 500 },
             };
         }
         try {
-            const xmlData: any = await parseStringPromise(rawData);
+            const xmlData = await parseStringPromise(rawData);
             let str: string = xmlData.string._;
-            if (str.startsWith("TperHellobus: ")) str = str.substring(14);
-            else if (str.includes("ERR_TOO_MANY_REQUESTS_LOCK"))
+            if (str.startsWith('TperHellobus: ')) str = str.substring(14);
+            else if (str.includes('ERR_TOO_MANY_REQUESTS_LOCK'))
                 return {
                     err: {
-                        msg: "TperHellobus requests limit reached",
-                        status: 500
-                    }
+                        msg: 'TperHellobus requests limit reached',
+                        status: 500,
+                    },
                 } as FnErr;
-            else if (str.includes("SERVICE FAILURE"))
+            else if (str.includes('SERVICE FAILURE'))
                 return {
-                    err: { msg: "TperHellobus service failed", status: 500 }
+                    err: { msg: 'TperHellobus service failed', status: 500 },
                 } as FnErr;
             else if (/FERMATA [0-9]+ NON GESTITA/g.test(str)) {
                 return {
-                    err: { msg: `Stop ${stopId} is unknown`, status: 200 }
+                    err: { msg: `Stop ${stopId} is unknown`, status: 200 },
                 } as FnErr;
             } else
                 return {
                     err: {
                         msg: `Invalid TperHellobus response: ${str}`,
-                        status: 500
-                    }
+                        status: 500,
+                    },
                 } as FnErr;
 
-            if (str.includes("OGGI NESSUNA ALTRA CORSA DI"))
+            if (str.includes('OGGI NESSUNA ALTRA CORSA DI'))
                 return [] as Corsa[];
 
             trips = str
-                .split(", ")
+                .split(', ')
                 .map(e => {
-                    const s = e.split(" ");
+                    const s = e.split(' ');
                     const busNumIndex = e.search(/\(Bus[0-9]+ CON PEDANA\)/g);
-                    let busNum: string | undefined = undefined;
+                    let busNum: string | undefined;
                     if (busNumIndex !== -1) {
                         const s1 = e.substring(busNumIndex);
                         const sIndex = s1.search(/[0-9]+/g);
                         if (sIndex === -1) {
-                            logger.error("Invalid TPER s2 string format");
+                            logger.error('Invalid TPER s2 string format');
                             return;
                         }
-                        busNum = s1.substring(sIndex)?.split(" ")[0];
+                        busNum = s1.substring(sIndex)?.split(' ')[0];
                     }
                     // const time = _t.unix();
                     const t: Corsa = {
                         linea: s[0],
                         destinazione: null,
-                        arrivoProgrammato: s[1] === "DaSatellite" ? null : s[2],
-                        arrivoTempoReale: s[1] === "DaSatellite" ? s[2] : null,
+                        arrivoProgrammato: s[1] === 'DaSatellite' ? null : s[2],
+                        arrivoTempoReale: s[1] === 'DaSatellite' ? s[2] : null,
                         busNum: busNum || null,
-                        id: s[0] + (busNum || ""),
+                        id: s[0] + (busNum || ''),
                         numPasseggeri: null,
                         postiTotali: null,
                         prossimaFermata: null,
-                        tempoReale: s[1] === "DaSatellite"
+                        tempoReale: s[1] === 'DaSatellite',
                     };
                     noTrips = false;
                     return t;
                 })
                 .filter(e => !!e) as Corsa[];
         } catch (err) {
-            logger.error("Error while fetching TPER routes");
+            logger.error('Error while fetching TPER routes');
             logger.error(err);
             return {
-                err: { msg: "Error while loading data", status: 500 }
+                err: { msg: 'Error while loading data', status: 500 },
             };
         }
 
         if (!trips) {
-            logger.debug("TPER no trips");
+            logger.debug('TPER no trips');
             if (noTrips) {
                 return {
                     err: {
-                        msg: "No more trips planned for today",
-                        status: 200
-                    }
+                        msg: 'No more trips planned for today',
+                        status: 200,
+                    },
                 } as FnErr;
             } else {
                 return {
-                    err: { msg: "Error while loading data", status: 500 }
+                    err: { msg: 'Error while loading data', status: 500 },
                 } as FnErr;
             }
         }
@@ -250,11 +246,11 @@ class Tper {
             (a, b) =>
                 moment(
                     a.arrivoTempoReale || a.arrivoProgrammato,
-                    "HH:mm"
+                    'HH:mm'
                 ).unix() -
                 moment(
                     b.arrivoTempoReale || b.arrivoProgrammato,
-                    "HH:mm"
+                    'HH:mm'
                 ).unix()
         );
 
@@ -262,7 +258,7 @@ class Tper {
     }
 
     private static async _wait(ms = 500) {
-        return new Promise((res, rej) => {
+        return new Promise((res, _rej) => {
             setTimeout(res, ms);
         });
     }
@@ -284,7 +280,7 @@ class Tper {
             linee = s.routes;
             logger.debug(
                 `Carico corse TPER per fermata ${stopId} per linee ${linee.join(
-                    ", "
+                    ', '
                 )}`
             );
         }
@@ -293,14 +289,14 @@ class Tper {
             const job = Tper._getTripsForRoute(stopId, linea)
                 .then(corsa => {
                     if (isFnErr(corsa)) {
-                        logger.error("TPER contains fnErr");
+                        logger.error('TPER contains fnErr');
                         logger.error(corsa);
                         return null;
                     }
                     corse.push(...corsa);
                 })
                 .catch(err => {
-                    logger.error("TPER request error");
+                    logger.error('TPER request error');
                     logger.error(err);
                     return null;
                 });
@@ -315,15 +311,15 @@ class Tper {
             (a, b) =>
                 moment(
                     a.arrivoTempoReale || a.arrivoProgrammato,
-                    "HH:mm"
+                    'HH:mm'
                 ).unix() -
                 moment(
                     b.arrivoTempoReale || b.arrivoProgrammato,
-                    "HH:mm"
+                    'HH:mm'
                 ).unix()
         );
 
-        logger.debug("Corse TPER restituite w/o tempo reale:");
+        logger.debug('Corse TPER restituite w/o tempo reale:');
         logger.debug(JSON.stringify(corse, null, 2));
 
         const mappedToDestination = await this.associateRealTimeInfoWithGTFS(
@@ -331,7 +327,7 @@ class Tper {
             corse
         );
 
-        logger.debug("Corse TPER restituite:");
+        logger.debug('Corse TPER restituite:');
         logger.debug(JSON.stringify(mappedToDestination, null, 2));
 
         return mappedToDestination;
@@ -340,10 +336,10 @@ class Tper {
     private static async _cacheStops(): Promise<boolean> {
         try {
             if (Tper.isCaching) {
-                logger.info("TPER cache already in progress");
+                logger.info('TPER cache already in progress');
                 return false;
             }
-            logger.info("Creo cache TPER...");
+            logger.info('Creo cache TPER...');
 
             // Use this only for DEBUG
             // Tper.fermate = JSON.parse(
@@ -362,19 +358,19 @@ class Tper {
 
             const { data } = await axios.post(Tper.lineeFermateUrl);
 
-            logger.info("TPER cache loaded, parsing...");
+            logger.info('TPER cache loaded, parsing...');
 
             const parsed = await parseStringPromise(data);
 
             const stops: StopsObj = {};
-            for (const stop of parsed.DataSet["diffgr:diffgram"][0]
+            for (const stop of parsed.DataSet['diffgr:diffgram'][0]
                 .NewDataSet[0].Table) {
                 if (!(stop.codice_fermata[0] in stops)) {
                     stops[stop.codice_fermata[0]] = {
                         coordX: stop.coordinata_x[0],
                         coordY: stop.coordinata_y[0],
                         stopName: stop.denominazione[0],
-                        routes: [stop.codice_linea][0]
+                        routes: [stop.codice_linea][0],
                     };
                 } else {
                     if (
@@ -389,7 +385,7 @@ class Tper {
                 }
             }
 
-            logger.info("Fermate TPER caricate");
+            logger.info('Fermate TPER caricate');
             Tper.fermate = Object.entries(stops).map(
                 e =>
                     ({
@@ -397,8 +393,8 @@ class Tper {
                         stopName: e[1].stopName,
                         coordX: e[1].coordX,
                         coordY: e[1].coordY,
-                        routes: e[1].routes
-                    } as TperStop)
+                        routes: e[1].routes,
+                    }) as TperStop
             );
             // Use this for DEBUG only
             // fs.writeFileSync(
@@ -406,11 +402,11 @@ class Tper {
             //     JSON.stringify(Tper.fermate, null, 4)
             // );
             Tper.cacheDate = moment();
-            logger.info("TPER cache created at " + Tper.cacheDate?.format());
+            logger.info(`TPER cache created at ${Tper.cacheDate?.format()}`);
             Tper.isCaching = false;
             return true;
         } catch (err) {
-            logger.error("Error while caching TPER stops");
+            logger.error('Error while caching TPER stops');
             logger.error(err);
             Tper.isCaching = false;
             return false;
@@ -421,7 +417,7 @@ class Tper {
         return (
             !Tper._fermate ||
             !Tper.cacheDate ||
-            moment().diff(Tper.cacheDate, "days") > 3
+            moment().diff(Tper.cacheDate, 'days') > 3
         );
     }
 
@@ -443,26 +439,26 @@ class Tper {
         if (Tper._isCacheOutdated()) {
             const res = await Tper._cacheStops();
             if (!res) {
-                logger.error("Errore fuzzy search TPER return []");
+                logger.error('Errore fuzzy search TPER return []');
                 return [];
             }
         }
 
-        logger.debug("Cerco fermata fuzzy " + nome);
+        logger.debug(`Cerco fermata fuzzy ${nome}`);
 
         const options = {
             includeScore: true,
             keys: [
                 {
-                    name: "stopName",
-                    weight: 0.3
+                    name: 'stopName',
+                    weight: 0.3,
                 },
                 {
-                    name: "stopId",
-                    weight: 0.7
-                }
+                    name: 'stopId',
+                    weight: 0.7,
+                },
             ],
-            shouldSort: false
+            shouldSort: false,
         };
 
         const fuse = new Fuse(Tper.fermate as TperStop[], options);
@@ -477,10 +473,10 @@ class Tper {
             // console.log("TPER news item:", item);
             const news: News = {
                 title: item.title,
-                agency: "tper",
+                agency: 'tper',
                 date: moment(item.isoDate),
-                type: item.categories?.[0]._ || item.creator || "Uncategorized",
-                url: item.link
+                type: item.categories?.[0]._ || item.creator || 'Uncategorized',
+                url: item.link,
             };
             newsList.push(news);
         });
@@ -492,9 +488,9 @@ class Tper {
         if (
             !Tper.newsCache ||
             !Tper.newsCacheDate ||
-            moment().diff(Tper.newsCacheDate, "minutes") > 10
+            moment().diff(Tper.newsCacheDate, 'minutes') > 10
         ) {
-            logger.info("Carico news TPER");
+            logger.info('Carico news TPER');
             try {
                 // TPER fatta sempre bene, certificato non valido
                 const data = await fetchUrlWithCurl(Tper.newsUrl);
@@ -508,16 +504,16 @@ class Tper {
                 Tper.newsCache = news;
                 Tper.newsCacheDate = moment();
 
-                logger.info("TPER fetched " + news.length + " news");
+                logger.info(`TPER fetched ${news.length} news`);
 
                 return news;
             } catch (err) {
-                logger.error("Error while fetching TPER news");
+                logger.error('Error while fetching TPER news');
                 logger.error(err);
                 return null;
             }
         } else {
-            logger.debug("News TPER da cache");
+            logger.debug('News TPER da cache');
             return Tper.newsCache;
         }
     }
@@ -526,24 +522,25 @@ class Tper {
         if (
             Tper.openDataVersionCache &&
             Tper.openDataVersionCacheDate &&
-            moment().diff(Tper.openDataVersionCacheDate, "days") <= 1
+            moment().diff(Tper.openDataVersionCacheDate, 'days') <= 1
         ) {
             logger.debug(
-                "TPER open data version from cache: " +
+                'TPER open data version from cache: ' +
                     Tper.openDataVersionCache
             );
             return Tper.openDataVersionCache;
         }
 
-        logger.info("Fetching TPER latest open data version");
+        logger.info('Fetching TPER latest open data version');
 
         let xml: string;
+        // biome-ignore lint/suspicious/noExplicitAny: too hard to type
         let result: { [key: string]: any };
         try {
             const res = await axios.get(Tper.openDataVersionUrl);
             xml = res.data;
         } catch (err) {
-            logger.error("Error while fetching TPER open data version");
+            logger.error('Error while fetching TPER open data version');
             logger.error(err);
             return null;
         }
@@ -551,23 +548,23 @@ class Tper {
         try {
             result = await parseStringPromise(xml);
         } catch (err) {
-            logger.error("Error while parsing TPER open data version");
+            logger.error('Error while parsing TPER open data version');
             logger.error(err);
             return null;
         }
 
         const latestVersionStr = (<OpenDataTable>(
-            result.DataSet["diffgr:diffgram"][0].NewDataSet[0].Table.find(
-                (e: OpenDataTable) => e.nome_file[0] === "gommagtfsbo"
+            result.DataSet['diffgr:diffgram'][0].NewDataSet[0].Table.find(
+                (e: OpenDataTable) => e.nome_file[0] === 'gommagtfsbo'
             )
         )).versione[0];
 
-        const latestVersion = moment(latestVersionStr, "YYYYMMDD");
+        const latestVersion = moment(latestVersionStr, 'YYYYMMDD');
 
         logger.info(
             `TPER open data version: "${latestVersionStr}" (${latestVersion
-                .tz("Europe/Rome")
-                .format("DD/MM/YYYY")})`
+                .tz('Europe/Rome')
+                .format('DD/MM/YYYY')})`
         );
 
         Tper.openDataVersionCache = latestVersion;
@@ -581,39 +578,39 @@ class Tper {
         if (
             !force &&
             Tper.gtfsCacheDate &&
-            moment().diff(Tper.gtfsCacheDate, "days") <= 1
+            moment().diff(Tper.gtfsCacheDate, 'days') <= 1
         ) {
-            logger.debug("TPER GTFS data already updated, not fetching");
+            logger.debug('TPER GTFS data already updated, not fetching');
             return null;
         }
 
-        logger.info("Fetching TPER GTFS data in _fetchAndParseGTFSData");
+        logger.info('Fetching TPER GTFS data in _fetchAndParseGTFSData');
 
         const latestDate = await Tper.fetchLatestOpenDataVersion();
 
         if (!latestDate) {
-            logger.error("No latest date in _fetchAndParseGTFSData");
+            logger.error('No latest date in _fetchAndParseGTFSData');
             return null;
         }
 
         const url = `https://solweb.tper.it/web/tools/open-data/open-data-download.aspx?source=solweb.tper.it&filename=gommagtfsbo&version=${latestDate
-            ?.tz("Europe/Rome")
-            .format("YYYYMMDD")}&format=zip`;
+            ?.tz('Europe/Rome')
+            .format('YYYYMMDD')}&format=zip`;
 
-        logger.debug("Fetching TPER GTFS data from " + url);
+        logger.debug(`Fetching TPER GTFS data from ${url}`);
 
-        const response = await axios.get(url, { responseType: "arraybuffer" });
+        const response = await axios.get(url, { responseType: 'arraybuffer' });
 
-        logger.debug("TPER GTFS data fetched from " + url);
+        logger.debug(`TPER GTFS data fetched from ${url}`);
 
         const zip = await JSZip.loadAsync(response.data);
 
         const files = {
-            routes: "routes.txt",
-            trips: "trips.txt",
-            stops: "stops.txt",
-            stop_times: "stop_times.txt",
-            calendar_dates: "calendar_dates.txt"
+            routes: 'routes.txt',
+            trips: 'trips.txt',
+            stops: 'stops.txt',
+            stop_times: 'stop_times.txt',
+            calendar_dates: 'calendar_dates.txt',
         };
 
         // Clear existing data
@@ -621,24 +618,25 @@ class Tper {
 
         for (const key in files) {
             logger.debug(
-                "Parsing TPER GTFS file " + files[<keyof typeof files>key]
+                `Parsing TPER GTFS file ${files[key as keyof typeof files]}`
             );
 
-            const file = files[<keyof typeof files>key];
-            const content = await zip.file(file)?.async("string");
+            const file = files[key as keyof typeof files];
+            const content = await zip.file(file)?.async('string');
             if (!content) {
-                logger.error("No content in TPER GTFS parse for file " + file);
+                logger.error(`No content in TPER GTFS parse for file ${file}`);
                 return null;
             }
 
-            const parsedData = await CsvParser.parseAsync(content, {
+            // biome-ignore lint/suspicious/noExplicitAny: too hard to type
+            const parsedData = await CsvParser.parseAsync<any>(content, {
                 columns: true,
-                delimiter: ",",
-                trim: true
+                delimiter: ',',
+                trim: true,
             });
 
             logger.debug(
-                "Parsed TPER GTFS file " + files[<keyof typeof files>key]
+                `Parsed TPER GTFS file ${files[key as keyof typeof files]}`
             );
 
             // Insert data into SQLite database instead of writing JSON files
@@ -663,61 +661,9 @@ class Tper {
 
         Tper.gtfsCacheDate = moment();
 
-        logger.info("TPER GTFS data successfully imported to SQLite database");
+        logger.info('TPER GTFS data successfully imported to SQLite database');
 
         return null;
-    }
-
-    private async getGTFSData<K extends keyof GTFS>(
-        datum: K
-    ): Promise<GTFS[K] | null> {
-        await Tper._fetchAndParseGTFSData();
-
-        let gtfsData: GTFS[K];
-
-        try {
-            switch (datum) {
-                case 'routes':
-                    gtfsData = Tper.gtfsDatabase.getAllRoutes() as GTFS[K];
-                    break;
-                case 'trips':
-                    gtfsData = Tper.gtfsDatabase.getAllTrips() as GTFS[K];
-                    break;
-                case 'stops':
-                    gtfsData = Tper.gtfsDatabase.getAllStops() as GTFS[K];
-                    break;
-                case 'stop_times':
-                    gtfsData = Tper.gtfsDatabase.getAllStopTimes() as GTFS[K];
-                    break;
-                case 'calendar_dates':
-                    gtfsData = Tper.gtfsDatabase.getAllCalendarDates() as GTFS[K];
-                    break;
-                default:
-                    logger.error("Unknown GTFS data type: " + datum);
-                    return null;
-            }
-        } catch (err) {
-            logger.error("Error while fetching GTFS data from SQLite: " + datum);
-            logger.error(err);
-            return null;
-        }
-
-        if (!gtfsData) {
-            logger.error("No GTFS data in database for: " + datum);
-            return null;
-        }
-
-        // Fix gtfs route TPER name exceptions
-        if (datum === "trips" || datum === "routes") {
-            gtfsData = (gtfsData as (GTFSTrip | GTFSRoute)[]).map(e => ({
-                ...e,
-                route_id: getRouteNameException(e.route_id)
-            })) as GTFS[K];
-        }
-
-        logger.debug("GTFS data fetched from SQLite for " + datum);
-
-        return gtfsData || null;
     }
 
     private async findClosestGTFSTrip(
@@ -730,7 +676,7 @@ class Tper {
 
         const arrivalTime = moment(
             realTimeData.arrivoTempoReale || realTimeData.arrivoProgrammato,
-            "HH:mm"
+            'HH:mm'
         );
 
         logger.debug(
@@ -739,20 +685,19 @@ class Tper {
             }`
         );
 
-        const routeId = getRouteNameException(realTimeData.linea) || realTimeData.linea;
-        
+        const routeId =
+            getRouteNameException(realTimeData.linea) || realTimeData.linea;
+
         // Use SQLite to find trips for the specific route
-        const routeIdVariants = [
-            routeId,
-            realTimeData.linea
-        ];
-        
+        const routeIdVariants = [routeId, realTimeData.linea];
+
         if (realTimeData.destinazione) {
             routeIdVariants.push(routeId + realTimeData.destinazione);
         }
-        
-        const gtfsTrips = Tper.gtfsDatabase.findTripsByRouteIds(routeIdVariants);
-        
+
+        const gtfsTrips =
+            Tper.gtfsDatabase.findTripsByRouteIds(routeIdVariants);
+
         // Use SQLite to find stop times for the specific stop
         const stopTimes = Tper.gtfsDatabase.findStopTimesForStop(stopId);
 
@@ -770,10 +715,10 @@ class Tper {
             const stopTime = stopTimes.find(st => st.trip_id === trip.trip_id);
 
             if (stopTime) {
-                const _gtfsArrival = moment(stopTime.arrival_time, "HH:mm:ss");
+                const _gtfsArrival = moment(stopTime.arrival_time, 'HH:mm:ss');
 
                 const difference = Math.abs(
-                    arrivalTime.diff(_gtfsArrival, "minutes")
+                    arrivalTime.diff(_gtfsArrival, 'minutes')
                 );
                 if (difference < minDifference) {
                     minDifference = difference;
@@ -793,8 +738,8 @@ class Tper {
                 } at ${moment(
                     stopTimes.find(st => st.trip_id === closestTrip?.trip_id)
                         ?.arrival_time,
-                    "HH:mm:ss"
-                ).format("HH:mm")}`
+                    'HH:mm:ss'
+                ).format('HH:mm')}`
             );
         } else {
             logger.debug(
@@ -817,7 +762,7 @@ class Tper {
 
         const promises = realTimeData.map(async tripData => {
             logger.debug(
-                "Associating GTFS data with TPER data for trip of line " +
+                'Associating GTFS data with TPER data for trip of line ' +
                     tripData.linea
             );
 
@@ -839,16 +784,15 @@ class Tper {
 
                 tripData.trip = associatedGTFSTrip;
                 tripData.destinazione = lastStop?.stop_name || null;
-                tripData.arrivoProgrammato = gtfsArrival
-                    .format("HH:mm");
+                tripData.arrivoProgrammato = gtfsArrival.format('HH:mm');
             }
 
             logger.debug(
                 `TPER trip ${tripData.linea} at ${
                     tripData.arrivoTempoReale || tripData.arrivoProgrammato
-                } has destination "${tripData.destinazione}" and arrival time ${
-                    gtfsArrival?.format("HH:mm")
-                }`
+                } has destination "${tripData.destinazione}" and arrival time ${gtfsArrival?.format(
+                    'HH:mm'
+                )}`
             );
 
             return tripData;
@@ -869,7 +813,8 @@ class Tper {
 
         if (!stopTimes.length) {
             logger.warn(
-                "No GTFS stop times in caricaFermateDaTrip for trip " + gtfsTripId
+                'No GTFS stop times in caricaFermateDaTrip for trip ' +
+                    gtfsTripId
             );
             return null;
         }
@@ -882,21 +827,23 @@ class Tper {
 
             if (!stop) {
                 logger.warn(
-                    "No stop in caricaFermateDaTrip for trip " +
+                    'No stop in caricaFermateDaTrip for trip ' +
                         gtfsTripId +
-                        " and stop " +
+                        ' and stop ' +
                         stopTime.stop_id
                 );
                 continue;
             }
 
-            const stopTimeMoment = moment(stopTime.arrival_time, "HH:mm:ss");
-            const realTimeMoment = stopTimeMoment.clone().add(minutesDelay, "minutes");
+            const stopTimeMoment = moment(stopTime.arrival_time, 'HH:mm:ss');
+            const realTimeMoment = stopTimeMoment
+                .clone()
+                .add(minutesDelay, 'minutes');
 
             stops.push({
                 stop,
                 scheduledTime: stopTimeMoment,
-                realTime: realTimeMoment
+                realTime: realTimeMoment,
             });
         }
 
@@ -907,10 +854,10 @@ class Tper {
      * Force reloads both stops and GTFS data
      */
     public static async forceReloadCache() {
-        logger.info("TPER force reloading cache");
+        logger.info('TPER force reloading cache');
         await Tper._fetchAndParseGTFSData(true);
         await Tper._cacheStops();
-        logger.info("TPER cache reloaded");
+        logger.info('TPER cache reloaded');
     }
 }
 

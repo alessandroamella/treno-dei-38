@@ -1,12 +1,12 @@
-import axios from "axios";
-import { logger } from "../utils/logger";
-import OutputFormattato from "./OutputFormattato";
-import StatoTreno from "./StatoTreno";
-import Stazione from "./Stazione";
-import TrenoTabellone from "../interfaces/TrenoTabellone";
-import moment, { Moment } from "moment";
-import { TrenitaliaNewsItem, rssParser } from "./News";
-import News from "../interfaces/News";
+import axios from 'axios';
+import moment, { type Moment } from 'moment';
+import type News from '../interfaces/News';
+import type TrenoTabellone from '../interfaces/TrenoTabellone';
+import { logger } from '../utils/logger';
+import { rssParser, type TrenitaliaNewsItem } from './News';
+import type OutputFormattato from './OutputFormattato';
+import type StatoTreno from './StatoTreno';
+import type Stazione from './Stazione';
 
 class Trenitalia {
     readonly numeroTreno: string;
@@ -16,7 +16,7 @@ class Trenitalia {
     private dataPartezaMs: string | null = null;
 
     private static newsUrl =
-        "https://www.rfi.it/it/news-e-media/infomobilita.rss.updates.emilia_romagna.xml";
+        'https://www.rfi.it/it/news-e-media/infomobilita.rss.updates.emilia_romagna.xml';
     private static newsCache: News[] | null = null;
     private static newsCacheDate: Moment | null = null;
 
@@ -27,21 +27,23 @@ class Trenitalia {
 
     public static isStatoTreno = (v: unknown): v is StatoTreno => {
         return (
-            !!v && typeof v === "object" && Array.isArray((v as any).fermate)
+            !!v &&
+            typeof v === 'object' &&
+            Array.isArray((v as { fermate: unknown[] }).fermate)
         );
     };
 
     public async caricaDatiTreno(): Promise<boolean> {
         if (this.stazionePartenza && this.dataPartezaMs) {
-            logger.warn("caricaDatiTreno dati già caricati");
+            logger.warn('caricaDatiTreno dati già caricati');
             return true;
         }
 
-        let data;
+        let data: string;
         try {
             data = (
                 await axios.get(
-                    "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/cercaNumeroTrenoTrenoAutocomplete/" +
+                    'http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/cercaNumeroTrenoTrenoAutocomplete/' +
                         this.numeroTreno
                 )
             ).data;
@@ -55,17 +57,17 @@ class Trenitalia {
 
         if (!data) {
             logger.error(
-                "Errore nel caricamento dati treno " + this.numeroTreno
+                `Errore nel caricamento dati treno ${this.numeroTreno}`
             );
             return false;
         }
 
-        const risultati = (data as string).trim().split("\n");
+        const risultati = (data as string).trim().split('\n');
         const mapped = risultati
-            .map(r => r.split("|")[1].split("-").slice(1))
+            .map(r => r.split('|')[1].split('-').slice(1))
             .map(r => ({
                 stazionePartenza: r[0],
-                dataPartenzaMs: r[1]
+                dataPartenzaMs: r[1],
             }));
 
         const { stazionePartenza, dataPartenzaMs } =
@@ -84,7 +86,7 @@ class Trenitalia {
     public async caricaInfoViaggio(): Promise<StatoTreno | null> {
         if (!this.stazionePartenza || !this.dataPartezaMs) {
             logger.error(
-                "Bisogna chiamare caricaDatiTreno() prima di invocare caricaInfoViaggio()"
+                'Bisogna chiamare caricaDatiTreno() prima di invocare caricaInfoViaggio()'
             );
         }
 
@@ -94,7 +96,7 @@ class Trenitalia {
 
         if (!Trenitalia.isStatoTreno(data)) {
             logger.error(
-                "Errore nel caricamento info viaggio del treno " +
+                'Errore nel caricamento info viaggio del treno ' +
                     this.numeroTreno
             );
             return null;
@@ -115,13 +117,13 @@ class Trenitalia {
                 .map(e => ({
                     ...Trenitalia.formattaOutput(e),
                     orarioArrivo: e.orarioPartenza,
-                    idOrigine: e.codOrigine
+                    idOrigine: e.codOrigine,
                 }))
                 .map(({ origine, ...rest }) => rest);
             // SOLO REGIONALI
             // .filter(e => e.treno.toLowerCase().includes("reg"));
         } catch (err) {
-            logger.error("Errore nel caricamento tabellone");
+            logger.error('Errore nel caricamento tabellone');
             logger.error(err);
             return null;
         }
@@ -138,16 +140,16 @@ class Trenitalia {
                 id: f.id,
                 dataProgrammata: f.partenza_teorica || f.programmata,
                 dataEffettiva: f.partenzaReale || f.arrivoReale,
-                transitato: f.actualFermataType.toString() === "1",
-                soppressa: f.actualFermataType.toString() === "3"
+                transitato: f.actualFermataType.toString() === '1',
+                soppressa: f.actualFermataType.toString() === '3',
             })),
             ritardo: statoTreno.ritardo,
             oraUltimoRilevamento: statoTreno.oraUltimoRilevamento,
             stazioneUltimoRilevamento:
-                statoTreno.stazioneUltimoRilevamento !== "--"
+                statoTreno.stazioneUltimoRilevamento !== '--'
                     ? statoTreno.stazioneUltimoRilevamento
                     : null,
-            info: statoTreno.subTitle
+            info: statoTreno.subTitle,
         };
     }
 
@@ -156,17 +158,17 @@ class Trenitalia {
     ): Promise<Stazione[] | null> {
         try {
             const { data } = await axios.get(
-                "http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/" +
+                'http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/' +
                     nome
             );
 
             const stazioni = (data as string)
                 .trim()
-                .split("\n")
-                .map(s => s.trim().split("|"));
+                .split('\n')
+                .map(s => s.trim().split('|'));
             return stazioni.map(s => ({ nome: s[0], id: s[1] }));
         } catch (err) {
-            logger.error("Errore nella ricerca stazione");
+            logger.error('Errore nella ricerca stazione');
             logger.error(err);
 
             return null;
@@ -177,9 +179,9 @@ class Trenitalia {
         if (
             !Trenitalia.newsCache ||
             !Trenitalia.newsCacheDate ||
-            moment().diff(Trenitalia.newsCacheDate, "minutes") > 10
+            moment().diff(Trenitalia.newsCacheDate, 'minutes') > 10
         ) {
-            logger.info("Carico news Trenitalia");
+            logger.info('Carico news Trenitalia');
             try {
                 // Trenitalia fatta sempre bene, certificato non valido
                 const { data } = await axios.get(Trenitalia.newsUrl);
@@ -194,16 +196,16 @@ class Trenitalia {
                 Trenitalia.newsCache = news;
                 Trenitalia.newsCacheDate = moment();
 
-                logger.info("Trenitalia fetched " + news.length + " news");
+                logger.info(`Trenitalia fetched ${news.length} news`);
 
                 return news;
             } catch (err) {
-                logger.error("Error while fetching Trenitalia news");
+                logger.error('Error while fetching Trenitalia news');
                 logger.error(err);
                 return null;
             }
         } else {
-            logger.debug("News Trenitalia da cache");
+            logger.debug('News Trenitalia da cache');
             return Trenitalia.newsCache;
         }
     }
@@ -213,10 +215,10 @@ class Trenitalia {
             .filter(item => item.title !== undefined)
             .map(item => ({
                 title: item.title!,
-                agency: "trenitalia",
+                agency: 'trenitalia',
                 date: moment(item.pubDate),
-                type: "Infomobilità",
-                url: item.link
+                type: 'Infomobilità',
+                url: item.link,
             }));
 
         return news;

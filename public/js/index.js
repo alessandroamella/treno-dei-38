@@ -4,23 +4,23 @@
 
 let socket;
 
-const modal = new bootstrap.Modal(document.querySelector(".main-modal"));
+const modal = new bootstrap.Modal(document.querySelector('.main-modal'));
 const cercaFermataModal = new bootstrap.Modal(
-    document.querySelector(".cerca-fermata-modal")
+    document.querySelector('.cerca-fermata-modal')
 );
-const tripModal = new bootstrap.Modal(document.querySelector(".trip-modal"));
+const tripModal = new bootstrap.Modal(document.querySelector('.trip-modal'));
 
 document
-    .querySelector(".cerca-fermata-modal")
-    .addEventListener("hidden.bs.modal", function (event) {
+    .querySelector('.cerca-fermata-modal')
+    .addEventListener('hidden.bs.modal', _event => {
         // document.getElementById("gps-status").innerHTML = "";
-        document.getElementById("nome-fermata-input").value = "";
+        document.getElementById('nome-fermata-input').value = '';
     });
 const stazioneModal = new bootstrap.Modal(
-    document.querySelector(".stazione-modal")
+    document.querySelector('.stazione-modal')
 );
-const gpsModal = new bootstrap.Modal(document.querySelector(".gps-modal"));
-document.querySelector(".gps-modal").addEventListener("hidden.bs.modal", () => {
+const gpsModal = new bootstrap.Modal(document.querySelector('.gps-modal'));
+document.querySelector('.gps-modal').addEventListener('hidden.bs.modal', () => {
     disconnettiGps();
 });
 
@@ -31,38 +31,38 @@ const loadingHTML = `
 `;
 
 const urlParams = new URLSearchParams(window.location.search);
-const trenoParam = urlParams.get("treno");
-const daParam = urlParams.get("da");
+const trenoParam = urlParams.get('treno');
+const daParam = urlParams.get('da');
 
 async function treno(numTreno, idOrigine) {
     const numTrenoValue =
-        numTreno || document.getElementById("numero-treno").value || "2463";
+        numTreno || document.getElementById('numero-treno').value || '2463';
 
-    document.getElementById("treno-info").style.display = "none";
-    document.getElementById("treno-loading").style.display = "block";
-    document.getElementById("fermate").style.display = "none";
+    document.getElementById('treno-info').style.display = 'none';
+    document.getElementById('treno-loading').style.display = 'block';
+    document.getElementById('fermate').style.display = 'none';
 
     let data;
     try {
         data = (
-            await axios.get("/treno", {
+            await axios.get('/treno', {
                 params: {
                     treno: numTrenoValue,
                     idorigine: idOrigine, // || "S05037"
-                }
+                },
             })
         ).data;
     } catch (err) {
-        document.getElementById("treno-info").style.display = "block";
-        document.getElementById("treno-loading").style.display = "none";
-        document.getElementById("fermate").style.display = "block";
+        document.getElementById('treno-info').style.display = 'block';
+        document.getElementById('treno-loading').style.display = 'none';
+        document.getElementById('fermate').style.display = 'block';
         if (err.response?.status === 400) {
             return alert(`Treno "${numTrenoValue}" non valido`);
         }
-        return alert(err.response?.data || "Errore sconosciuto");
+        return alert(err.response?.data || 'Errore sconosciuto');
     }
 
-    console.log("treno", data);
+    console.log('treno', data);
 
     const {
         treno,
@@ -70,57 +70,58 @@ async function treno(numTreno, idOrigine) {
         ritardo,
         oraUltimoRilevamento,
         stazioneUltimoRilevamento,
-        info
+        info,
     } = data;
 
-    document.getElementById("treno").textContent = treno;
+    document.getElementById('treno').textContent = treno;
 
-    document.getElementById("ritardo").textContent = `${ritardo >= 0 ? "+" + ritardo : ritardo
-        } minut${ritardo === 1 ? "o" : "i"}`;
+    document.getElementById('ritardo').textContent = `${
+        ritardo >= 0 ? `+${ritardo}` : ritardo
+    } minut${ritardo === 1 ? 'o' : 'i'}`;
 
-    document.getElementById("ora-ultimo-rilevamento").textContent =
+    document.getElementById('ora-ultimo-rilevamento').textContent =
         oraUltimoRilevamento
             ? _formattaData(oraUltimoRilevamento)
-            : "non so quando";
+            : 'non so quando';
 
-    document.getElementById("stazione-ultimo-rilevamento").textContent =
-        stazioneUltimoRilevamento || "non so dove";
+    document.getElementById('stazione-ultimo-rilevamento').textContent =
+        stazioneUltimoRilevamento || 'non so dove';
 
-    document.getElementById("treno-maggiori-info").textContent =
-        info || "nessuna";
+    document.getElementById('treno-maggiori-info').textContent =
+        info || 'nessuna';
 
-    document.getElementById("treno-info").style.display = "block";
+    document.getElementById('treno-info').style.display = 'block';
 
-    document.getElementById("fermate").innerHTML = "";
+    document.getElementById('fermate').innerHTML = '';
     for (const f of fermate) {
-        const li = document.createElement("li");
-        li.classList.add("list-group-item", "btn", "text-start");
+        const li = document.createElement('li');
+        li.classList.add('list-group-item', 'btn', 'text-start');
 
         li.dataset.id = f.id;
         li.dataset.nome = f.stazione;
-        li.addEventListener("click", () => {
+        li.addEventListener('click', () => {
             tabellone({ id: li.dataset.id, nome: li.dataset.nome });
         });
 
-        const p = document.createElement("p");
+        const p = document.createElement('p');
         p.textContent = f.stazione;
-        p.classList.add("m-0");
+        p.classList.add('m-0');
 
-        const span = document.createElement("span");
+        const span = document.createElement('span');
         span.textContent = _formattaData(f.dataEffettiva || f.dataProgrammata);
-        span.style.float = "right";
+        span.style.float = 'right';
         p.appendChild(span);
 
         if (
             f.dataEffettiva &&
             _formattaData(f.dataProgrammata) !== _formattaData(f.dataEffettiva)
         ) {
-            const span = document.createElement("span");
+            const span = document.createElement('span');
             span.textContent = _formattaData(f.dataProgrammata);
-            span.style.float = "right";
-            span.style.textDecoration = "line-through";
+            span.style.float = 'right';
+            span.style.textDecoration = 'line-through';
             span.style.fontWeight = 400;
-            span.style.marginRight = "0.25rem";
+            span.style.marginRight = '0.25rem';
             p.appendChild(span);
         }
 
@@ -128,26 +129,26 @@ async function treno(numTreno, idOrigine) {
 
         if (f.transitato) {
             li.style.fontWeight = 600;
-            li.style.backgroundColor = "#e9f5df";
+            li.style.backgroundColor = '#e9f5df';
         } else if (f.soppressa) {
-            li.style.textDecoration = "line-through";
-            li.style.backgroundColor = "#f0b9b9";
-        } else li.style.backgroundColor = "#eef5df";
+            li.style.textDecoration = 'line-through';
+            li.style.backgroundColor = '#f0b9b9';
+        } else li.style.backgroundColor = '#eef5df';
 
-        document.getElementById("fermate").appendChild(li);
+        document.getElementById('fermate').appendChild(li);
     }
 
-    document.getElementById("fermate").style.display = "block";
-    document.getElementById("treno-loading").style.display = "none";
-    document.getElementById("numero-treno").value = numTrenoValue;
+    document.getElementById('fermate').style.display = 'block';
+    document.getElementById('treno-loading').style.display = 'none';
+    document.getElementById('numero-treno').value = numTrenoValue;
 
-    document.getElementById("treno-ultimo-aggiornamento").style.display =
-        "block";
-    document.getElementById("treno-update").textContent = _formattaData(
+    document.getElementById('treno-ultimo-aggiornamento').style.display =
+        'block';
+    document.getElementById('treno-update').textContent = _formattaData(
         new Date()
     );
 
-    document.getElementById("treno-card").scrollIntoView();
+    document.getElementById('treno-card').scrollIntoView();
     _refresh();
 }
 
@@ -170,101 +171,99 @@ const busInterval = {};
 /**
  * @param {string | string[]} fermata
  */
-async function fetchStop(fermata, agency = "seta" | "tper") {
-    const { data } = await axios.get("bus", {
+async function fetchStop(fermata, agency = 'seta' | 'tper') {
+    const { data } = await axios.get('bus', {
         params: {
             q: fermata,
-            agency
-        }
+            agency,
+        },
     });
     // if (!data) throw new Error("non worka");
     return data;
 }
 
 function setBusCardLoading(cardNum = 1) {
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "block";
-    document.getElementById(`bus-corse-card-${cardNum}`).style.display = "none";
+    document.getElementById(`bus-loading-${cardNum}`).style.display = 'block';
+    document.getElementById(`bus-corse-card-${cardNum}`).style.display = 'none';
 }
 function setBusCardLoaded(cardNum = 1) {
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
+    document.getElementById(`bus-loading-${cardNum}`).style.display = 'none';
     document.getElementById(`bus-corse-card-${cardNum}`).style.display =
-        "block";
+        'block';
 }
 function hideBusCard(cardNum = 1) {
-    document.getElementById(`bus-loading-${cardNum}`).style.display = "none";
-    document.getElementById(`bus-corse-card-${cardNum}`).style.display = "none";
+    document.getElementById(`bus-loading-${cardNum}`).style.display = 'none';
+    document.getElementById(`bus-corse-card-${cardNum}`).style.display = 'none';
 }
 
 function setSetaBus(c, card) {
     if (c.busNum) {
-        card.title += "Bus " + c.busNum;
-        card.title += "<br>Programmato: " + c.arrivoProgrammato;
-        card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
+        card.title += `Bus ${c.busNum}`;
+        card.title += `<br>Programmato: ${c.arrivoProgrammato}`;
+        card.title += `<br>Tempo reale: ${c.arrivoTempoReale}`;
         if (c.numPasseggeri) {
             card.title += `<br>Passeggeri: ${c.numPasseggeri}/${c.postiTotali}`;
         } else if (c.postiTotali) {
-            card.title += "<br>Posti totali: " + c.postiTotali;
+            card.title += `<br>Posti totali: ${c.postiTotali}`;
         }
 
         // card.style.cursor = "pointer";
-        card.classList.add("btn");
-        card.style.textAlign = "left";
+        card.classList.add('btn');
+        card.style.textAlign = 'left';
 
-        card.addEventListener("click", () => {
-            document.querySelector(
-                ".main-modal-title"
-            ).textContent = `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
-            document.querySelector(
-                ".main-modal-body"
-            ).innerHTML = `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
+        card.addEventListener('click', () => {
+            document.querySelector('.main-modal-title').textContent =
+                `Bus ${c.busNum} - Linea ${c.linea} per ${c.destinazione}`;
+            document.querySelector('.main-modal-body').innerHTML =
+                `<iframe class="bus-iframe" src="https://wimb.setaweb.it/qm/index.html?id=${c.busNum}" title="Localizzazione bus ${c.busNum}"></iframe>`;
             modal.show();
         });
     } else {
-        card.title += "Programmato: " + c.arrivoProgrammato;
-        card.classList.remove("btn");
+        card.title += `Programmato: ${c.arrivoProgrammato}`;
+        card.classList.remove('btn');
     }
 }
 
 function setTperBus(c, card) {
     if (c.tempoReale) {
-        card.title += "Bus " + c.busNum;
+        card.title += `Bus ${c.busNum}`;
         if (c.arrivoProgrammato) {
-            card.title += "<br>Programmato: " + c.arrivoProgrammato;
+            card.title += `<br>Programmato: ${c.arrivoProgrammato}`;
         }
-        card.title += "<br>Tempo reale: " + c.arrivoTempoReale;
+        card.title += `<br>Tempo reale: ${c.arrivoTempoReale}`;
     } else {
-        card.title += "Programmato: " + c.arrivoProgrammato;
-        card.classList.remove("btn");
+        card.title += `Programmato: ${c.arrivoProgrammato}`;
+        card.classList.remove('btn');
     }
 
     if (c.trip) {
         // card.style.cursor = "pointer";
-        card.classList.add("btn");
-        card.style.textAlign = "left";
+        card.classList.add('btn');
+        card.style.textAlign = 'left';
 
-        card.addEventListener("click", () => {
+        card.addEventListener('click', () => {
             loadTrips(
                 c.linea,
                 c.trip.trip_id,
                 c.arrivoTempoReale && c.arrivoProgrammato
                     ? dateFns.differenceInMinutes(
-                        _parseHHMM(c.arrivoTempoReale),
-                        _parseHHMM(c.arrivoProgrammato)
-                    )
+                          _parseHHMM(c.arrivoTempoReale),
+                          _parseHHMM(c.arrivoProgrammato)
+                      )
                     : 0
             );
         });
     } else {
         // card.title += "Programmato: " + c.arrivoProgrammato;
-        card.classList.remove("btn");
+        card.classList.remove('btn');
     }
 }
 
 function getAgencyFromParam(data, agency) {
-    if (!data.agency && agency === "seta") return "seta";
-    else if (!data.agency && agency === "tper") return "tper";
-    else if (data.agency === "seta") return "seta";
-    else if (data.agency === "tper") return "tper";
+    if (!data.agency && agency === 'seta') return 'seta';
+    else if (!data.agency && agency === 'tper') return 'tper';
+    else if (data.agency === 'seta') return 'seta';
+    else if (data.agency === 'tper') return 'tper';
     else return null;
 }
 
@@ -274,55 +273,55 @@ function getAgencyFromParam(data, agency) {
  * @param {number} cardNum
  * @param {'seta' | 'tper'} agency
  */
-function addCorseToBusCard(data, cardNum = 1, agency = "seta") {
+function addCorseToBusCard(data, cardNum = 1, agency = 'seta') {
     const corseElem = document.getElementById(`bus-corse-${cardNum}`);
-    corseElem.innerHTML = "";
+    corseElem.innerHTML = '';
 
-    console.log("corse", { data, agency });
+    console.log('corse', { data, agency });
     for (const c of data) {
         const dataArrivo = _parseHHMM(
             c.arrivoTempoReale || c.arrivoProgrammato
         );
 
-        const card = document.querySelector(".bus-card").cloneNode(true);
-        card.style.display = "block";
-        card.querySelector(".bus-linea").textContent = c.linea;
-        card.querySelector(".bus-logo").src =
-            "/img/" + getAgencyFromParam(c, agency) + ".png";
-        card.querySelector(".bus-destinazione").textContent = c.destinazione;
-        card.querySelector(".bus-temporeale").style.display = c.arrivoTempoReale
-            ? "block"
-            : "none";
+        const card = document.querySelector('.bus-card').cloneNode(true);
+        card.style.display = 'block';
+        card.querySelector('.bus-linea').textContent = c.linea;
+        card.querySelector('.bus-logo').src =
+            `/img/${getAgencyFromParam(c, agency)}.png`;
+        card.querySelector('.bus-destinazione').textContent = c.destinazione;
+        card.querySelector('.bus-temporeale').style.display = c.arrivoTempoReale
+            ? 'block'
+            : 'none';
 
         const mins = dateFns.differenceInMinutes(
             dataArrivo,
             _parseHHMM(_formattaData(new Date(), false))
         );
-        card.querySelector(".bus-arrivo").textContent =
-            (Math.trunc(mins / 60) > 0 ? Math.trunc(mins / 60) + "h " : "") +
+        card.querySelector('.bus-arrivo').textContent =
+            (Math.trunc(mins / 60) > 0 ? `${Math.trunc(mins / 60)}h ` : '') +
             (mins % 60) +
-            "m" +
-            (!c.arrivoTempoReale ? "*" : "");
+            'm' +
+            (!c.arrivoTempoReale ? '*' : '');
 
-        card.dataset.bsToggle = "tooltip";
-        card.dataset.bsTrigger = "hover";
+        card.dataset.bsToggle = 'tooltip';
+        card.dataset.bsTrigger = 'hover';
         card.dataset.bsHtml = true;
-        card.title = "";
+        card.title = '';
 
-        if (getAgencyFromParam(c, agency) === "seta") setSetaBus(c, card);
+        if (getAgencyFromParam(c, agency) === 'seta') setSetaBus(c, card);
         else setTperBus(c, card);
 
         if (c.prossimaFermata) {
-            card.title += "<br>Prossima fermata: " + c.prossimaFermata;
+            card.title += `<br>Prossima fermata: ${c.prossimaFermata}`;
         }
         corseElem.appendChild(card);
     }
 
     if (data.length === 0) {
-        const p = document.createElement("p");
-        p.textContent = "Nessuna corsa nei prossimi 90 minuti";
-        p.classList.add("py-2", "mb-0");
-        p.style.textAlign = "center";
+        const p = document.createElement('p');
+        p.textContent = 'Nessuna corsa nei prossimi 90 minuti';
+        p.classList.add('py-2', 'mb-0');
+        p.style.textAlign = 'center';
         corseElem.appendChild(p);
     }
 }
@@ -348,10 +347,10 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
 
     setBusCardLoading(cardNum);
 
-    let fermataValue =
+    const fermataValue =
         fermata ||
         document.getElementById(`fermata-bus-${cardNum}`)?.value?.trim() ||
-        "MO2076";
+        'MO2076';
 
     if (!data) {
         try {
@@ -363,7 +362,7 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
                 clearInterval(busInterval[cardNum]);
             }
             isLoading = false;
-            return alert(err.response?.data || "Errore sconosciuto");
+            return alert(err.response?.data || 'Errore sconosciuto');
         }
     }
 
@@ -389,13 +388,13 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
     }
 
     busInterval[cardNum] = setInterval(() =>
-    // data && nomeFermata
-    //     ? fermata(nomeFermata)
-    //     :
-    {
-        if (!isLoading && !isViewingTripModal)
-            bus(cardNum, fermata, data, nomeFermata);
-    }, 30000);
+        // data && nomeFermata
+        //     ? fermata(nomeFermata)
+        //     :
+        {
+            if (!isLoading && !isViewingTripModal)
+                bus(cardNum, fermata, data, nomeFermata);
+        }, 30000);
 
     isLoading = false;
 }
@@ -414,63 +413,63 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
  * @param {number} cardNum
  */
 async function _infoFermata(stopId, cardNum) {
-    document.getElementById("nome-corsia-" + cardNum).innerHTML = loadingHTML;
+    document.getElementById(`nome-corsia-${cardNum}`).innerHTML = loadingHTML;
 
     /** @type {Fermata} */
     let data;
     try {
-        data = (await axios.get("/fermata/" + stopId)).data;
-        if (!data) throw new Error("Stop is null");
+        data = (await axios.get(`/fermata/${stopId}`)).data;
+        if (!data) throw new Error('Stop is null');
     } catch (err) {
         console.log(err?.response?.data || err);
-        document.getElementById("nome-corsia-" + cardNum).textContent = stopId;
+        document.getElementById(`nome-corsia-${cardNum}`).textContent = stopId;
         return;
     }
 
     // console.log(data);
 
-    document.getElementById("nome-corsia-" + cardNum).textContent =
+    document.getElementById(`nome-corsia-${cardNum}`).textContent =
         data.stopName;
 }
 
 function sanCesario() {
-    bus(1, "MO2076", undefined, undefined, "seta");
-    bus(2, "MO3600", undefined, undefined, "seta");
+    bus(1, 'MO2076', undefined, undefined, 'seta');
+    bus(2, 'MO3600', undefined, undefined, 'seta');
 }
 
 const autoCompleteConfig = [
     {
-        name: "Seleziona stazione",
+        name: 'Seleziona stazione',
         // inputSource: node.querySelector(".nome-stazione"),
-        inputSource: document.querySelector(".nome-stazione"),
-        targetID: document.querySelector(".nome-stazione"),
-        fetchURL: "/codicestazione/{term}",
+        inputSource: document.querySelector('.nome-stazione'),
+        targetID: document.querySelector('.nome-stazione'),
+        fetchURL: '/codicestazione/{term}',
         fetchMap: {
-            id: "id",
-            name: "nome"
+            id: 'id',
+            name: 'nome',
         },
 
         minLength: 4,
-        maxResults: 10
+        maxResults: 10,
     },
     {
-        name: "Cerca fermata",
-        inputSource: document.querySelector(".nome-fermata"),
-        targetID: document.querySelector(".nome-fermata"),
-        fetchURL: "/fermatadanome?q={term}",
+        name: 'Cerca fermata',
+        inputSource: document.querySelector('.nome-fermata'),
+        targetID: document.querySelector('.nome-fermata'),
+        fetchURL: '/fermatadanome?q={term}',
         fetchMap: {
-            id: "id",
-            name: "nome"
+            id: 'id',
+            name: 'nome',
         },
         minLength: 4,
-        maxResults: 10
-    }
+        maxResults: 10,
+    },
 ];
 
-function resultHandlerBS(config, elem) {
-    if (config === "Seleziona stazione") {
+function _resultHandlerBS(config, elem) {
+    if (config === 'Seleziona stazione') {
         return tabellone(elem);
-    } else if (config === "Cerca fermata") {
+    } else if (config === 'Cerca fermata') {
         return fermate(elem);
     }
 }
@@ -486,51 +485,52 @@ async function fermate(fermata) {
     cercaFermataModal.hide();
     modal.show();
 
-    document.querySelector(".nome-stazione").value = "";
+    document.querySelector('.nome-stazione').value = '';
 
-    document.querySelector(".main-modal-title").textContent =
-        "Seleziona fermata " + fermata.nome;
+    document.querySelector('.main-modal-title').textContent =
+        `Seleziona fermata ${fermata.nome}`;
 
-    document.querySelector(".main-modal-body").innerHTML = loadingHTML;
+    document.querySelector('.main-modal-body').innerHTML = loadingHTML;
     modal.show();
 
-    console.log("fermata", fermata);
+    console.log('fermata', fermata);
 
-    document.querySelector(".main-modal-title").textContent =
-        "Seleziona ID delle fermate di " + fermata.nome;
-    document.querySelector(".main-modal-body").innerHTML = `
+    document.querySelector('.main-modal-title').textContent =
+        `Seleziona ID delle fermate di ${fermata.nome}`;
+    document.querySelector('.main-modal-body').innerHTML = `
         <div class="seleziona-fermate">
             ${fermata.id
-            .split(";")
-            .map(
-                e => `
+                .split(';')
+                .map(
+                    e => `
                     <div class="form-check" style="overflow: auto;">
                         <input class="form-check-input fermata-input" type="checkbox" value="${e.toString()}" id="fermata-${e.toString()}">
                         <label class="form-check-label fermata-input-label" for="fermata-${e.toString()}">
                             <img
-                                src="/img/${e.split(",")[0]}.png"
+                                src="/img/${e.split(',')[0]}.png"
                                 alt="TPL agency logo"
                                 class="bus-logo me-1"
                                 style="object-fit: contain; max-width: 1rem"
                                 loading="lazy"
                             />
-                            <strong>${e.split(",")[1]}</strong>
-                            ${e.split(",").length > 1
-                        ? e
-                            .split(",")
-                            .slice(2)
-                            .map(
-                                f =>
-                                    `<span class="badge bg-secondary ms-1">${f}</span>`
-                            )
-                            .join("")
-                        : ""
-                    }
+                            <strong>${e.split(',')[1]}</strong>
+                            ${
+                                e.split(',').length > 1
+                                    ? e
+                                          .split(',')
+                                          .slice(2)
+                                          .map(
+                                              f =>
+                                                  `<span class="badge bg-secondary ms-1">${f}</span>`
+                                          )
+                                          .join('')
+                                    : ''
+                            }
                         </label>
                     </div>
                 `
-            )
-            .join("")}
+                )
+                .join('')}
 
                 <div class="d-flex mt-2" style="justify-content: center">
                 <button
@@ -556,12 +556,12 @@ async function tabellone(stazione) {
     stazioneModal.hide();
     modal.show();
 
-    document.querySelector(".nome-stazione").value = "";
+    document.querySelector('.nome-stazione').value = '';
 
-    document.querySelector(".main-modal-title").textContent =
-        "Caricamento stazione " + stazione.nome;
+    document.querySelector('.main-modal-title').textContent =
+        `Caricamento stazione ${stazione.nome}`;
 
-    document.querySelector(".main-modal-body").innerHTML = loadingHTML;
+    document.querySelector('.main-modal-body').innerHTML = loadingHTML;
     modal.show();
 
     /**
@@ -574,7 +574,7 @@ async function tabellone(stazione) {
     /** @type {TrenoTabellone[]} */
     let data;
     try {
-        data = (await axios.get("/tabellone/" + stazione.id)).data;
+        data = (await axios.get(`/tabellone/${stazione.id}`)).data;
     } catch (err) {
         alert(err?.response?.data || err);
         return modal.hide();
@@ -582,26 +582,29 @@ async function tabellone(stazione) {
 
     console.log(data);
 
-    document.querySelector(".main-modal-title").textContent =
-        "Treni da " + stazione.nome;
-    document.querySelector(".main-modal-body").innerHTML = `
+    document.querySelector('.main-modal-title').textContent =
+        `Treni da ${stazione.nome}`;
+    document.querySelector('.main-modal-body').innerHTML = `
         <ul class="list-group">
             ${data
-            .map(
-                e => `
-                    <li class="list-group-item btn" style="text-align: left;" onclick="trenoModal(${e.numero
-                    }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${e.destinazione
-                    } <span class="modal-ritardo">${e.ritardo > 0
-                        ? `+${e.ritardo}m`
-                        : _clockEmoji(new Date(e.orarioArrivo)) + "👌"
+                .map(
+                    e => `
+                    <li class="list-group-item btn" style="text-align: left;" onclick="trenoModal(${
+                        e.numero
+                    }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${
+                        e.destinazione
+                    } <span class="modal-ritardo">${
+                        e.ritardo > 0
+                            ? `+${e.ritardo}m`
+                            : `${_clockEmoji(new Date(e.orarioArrivo))}👌`
                     }</span>
                     <span class="float-end">${_formattaData(
                         e.orarioArrivo
                     )}</span>
                     </li>
             `
-            )
-            .join("")}
+                )
+                .join('')}
         </ul>
     `;
     modal.show();
@@ -655,21 +658,21 @@ async function loadTrips(line, tripId, minutesDelay) {
 
     isViewingTripModal = true;
 
-    document.querySelector(".trip-modal-title").textContent =
-        "Caricamento fermate...";
+    document.querySelector('.trip-modal-title').textContent =
+        'Caricamento fermate...';
 
-    document.querySelector(".trip-modal-body").innerHTML = loadingHTML;
+    document.querySelector('.trip-modal-body').innerHTML = loadingHTML;
     // tripModal.show();
 
     /** @type {TripStop[]} */
     let data;
     try {
         data = (
-            await axios.get("/fermatetrip", {
+            await axios.get('/fermatetrip', {
                 params: {
                     trip: tripId,
-                    minutesDelay: 0
-                }
+                    minutesDelay: 0,
+                },
             })
         ).data;
     } catch (err) {
@@ -684,47 +687,52 @@ async function loadTrips(line, tripId, minutesDelay) {
         realTime: _formattaData(
             dateFns.addMinutes(_parseHHMM(e.scheduledTime), minutesDelay),
             false
-        )
+        ),
     }));
 
-    console.log("loadTrips", data);
+    console.log('loadTrips', data);
 
-    document.querySelector(".trip-modal-title").textContent =
-        "Fermate di sto " + line;
-    document.querySelector(".trip-modal-body").innerHTML = `
+    document.querySelector('.trip-modal-title').textContent =
+        `Fermate di sto ${line}`;
+    document.querySelector('.trip-modal-body').innerHTML = `
         <ul class="list-group">
             ${data
-            .map(
-                e => `
-                    <li class="list-group-item btn" style="text-align: left;${!isBefore(e.realTime)
-                        ? "   background-color: lightgray;"
-                        : ""
-                    }" onclick="tripModal.hide();bus(1, ${e.stop.stop_id
-                    }, undefined, '${e.stop.stop_name}');"><strong>${e.stop.stop_name
+                .map(
+                    e => `
+                    <li class="list-group-item btn" style="text-align: left;${
+                        !isBefore(e.realTime)
+                            ? '   background-color: lightgray;'
+                            : ''
+                    }" onclick="tripModal.hide();bus(1, ${
+                        e.stop.stop_id
+                    }, undefined, '${e.stop.stop_name}');"><strong>${
+                        e.stop.stop_name
                     }</strong> ${e.stop.stop_id}
-                    <span class="float-end">${e.realTime &&
+                    <span class="float-end">${
+                        e.realTime &&
                         e.realTime !== e.scheduledTime &&
                         isBefore(e.realTime)
-                        ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
-                            _parseHHMM(e.scheduledTime)
-                        )}</span><span style="font-weight: 600;">${
-                        // _parseHHMM(
-                        e.realTime
-                        //   )
-                        }</span>`
-                        : `<span style="${e.realTime && e.realTime !== e.scheduledTime
-                            ? ""
-                            : "font-weight: 600;"
-                        }">${
-                        // _formattaData(_parseHHMM(
-                        e.scheduledTime
-                        // ))
-                        }</span>`
+                            ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
+                                  _parseHHMM(e.scheduledTime)
+                              )}</span><span style="font-weight: 600;">${
+                                  // _parseHHMM(
+                                  e.realTime
+                                  //   )
+                              }</span>`
+                            : `<span style="${
+                                  e.realTime && e.realTime !== e.scheduledTime
+                                      ? ''
+                                      : 'font-weight: 600;'
+                              }">${
+                                  // _formattaData(_parseHHMM(
+                                  e.scheduledTime
+                                  // ))
+                              }</span>`
                     }</span>
                     </li>
             `
-            )
-            .join("")}
+                )
+                .join('')}
         </ul>
     `;
     // tripModal.show();
@@ -734,56 +742,56 @@ async function loadTrips(line, tripId, minutesDelay) {
     _refresh();
 }
 
-function trenoModal(numTreno, idOrigine) {
+function _trenoModal(numTreno, idOrigine) {
     treno(numTreno, idOrigine);
     modal.hide();
 }
 
 function _formattaData(data, s) {
-    return dateFns.format(new Date(data), s ? "HH:mm:ss" : "HH:mm");
+    return dateFns.format(new Date(data), s ? 'HH:mm:ss' : 'HH:mm');
 }
 
 function _parseHHMM(hhmmStr) {
     return dateFns.parse(
-        dateFns.format(new Date(), "YYYY-MM-DD ") + hhmmStr,
-        "YYYY-MM-DD HH:mm",
+        dateFns.format(new Date(), 'YYYY-MM-DD ') + hhmmStr,
+        'YYYY-MM-DD HH:mm',
         new Date()
     );
 }
 
 function _dataBolide(date) {
-    return `bolide alle ${date ? _formattaData(date, true) : "boh"}`;
+    return `bolide alle ${date ? _formattaData(date, true) : 'boh'}`;
 }
 
 const bolideIcon = L.icon({
-    iconUrl: "/img/bolide.png",
+    iconUrl: '/img/bolide.png',
     iconSize: [100, 40],
     iconAnchor: [50, 20],
-    popupAnchor: [0, -18]
+    popupAnchor: [0, -18],
 });
 
 let map;
 
-async function connettiGps() {
+async function _connettiGps() {
     if (socket) await disconnettiGps();
-    console.log("connettiGps socket:", socket);
+    console.log('connettiGps socket:', socket);
 
     if (!map) {
-        map = L.map("map").setView([44.56384, 11.03409], 15);
+        map = L.map('map').setView([44.56384, 11.03409], 15);
         L.tileLayer(
-            "https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}",
+            'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}',
             {
                 attribution:
                     'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
                 maxZoom: 18,
-                id: "mapbox/streets-v11",
+                id: 'mapbox/streets-v11',
                 tileSize: 512,
                 zoomOffset: -1,
                 accessToken:
-                    "pk.eyJ1IjoiYml0cmV5IiwiYSI6ImNsMjZsMGZyejA2eXYza25xd3lvY3p2ZG0ifQ.G4c3HFBNVNPxAIbvaXQ2uQ"
+                    'pk.eyJ1IjoiYml0cmV5IiwiYSI6ImNsMjZsMGZyejA2eXYza25xd3lvY3p2ZG0ifQ.G4c3HFBNVNPxAIbvaXQ2uQ',
             }
         ).addTo(map);
-        console.log("map", map);
+        console.log('map', map);
     }
 
     setTimeout(() => {
@@ -794,7 +802,7 @@ async function connettiGps() {
     let marker;
 
     socket = await io();
-    socket.on("position", ({ lat, lon, date }) => {
+    socket.on('position', ({ lat, lon, date }) => {
         console.log({ lat, lon });
 
         if (firstRender) {
@@ -804,8 +812,8 @@ async function connettiGps() {
             marker.bindPopup(_dataBolide(date));
             marker.openPopup();
 
-            document.getElementById("c3-update-div").style.display = "block";
-            document.getElementById("c3-update").textContent = _formattaData(
+            document.getElementById('c3-update-div').style.display = 'block';
+            document.getElementById('c3-update').textContent = _formattaData(
                 date,
                 true
             );
@@ -818,15 +826,15 @@ async function connettiGps() {
             marker.setLatLng(newLatLng);
         }
 
-        document.getElementById("gps-loading").style.display = "none";
+        document.getElementById('gps-loading').style.display = 'none';
     });
-    socket.on("error", err => alert(err));
+    socket.on('error', err => alert(err));
 
     gpsModal.show();
 }
 
 async function disconnettiGps() {
-    console.log("disconnettiGps socket:", socket);
+    console.log('disconnettiGps socket:', socket);
     if (socket) {
         if (socket.connected) await socket.disconnect();
         socket = null;
@@ -846,14 +854,14 @@ function _refresh() {
     );
 }
 
-document.getElementById("numero-treno").addEventListener("change", e => {
+document.getElementById('numero-treno').addEventListener('change', _e => {
     treno();
 });
-document.getElementById("fermata-bus-1").addEventListener("change", e => {
+document.getElementById('fermata-bus-1').addEventListener('change', e => {
     bus(1, e.target.value);
 });
-document.getElementById("fermata-bus-2").addEventListener("change", e => {
-    e.target.value.startsWith("MO");
+document.getElementById('fermata-bus-2').addEventListener('change', e => {
+    e.target.value.startsWith('MO');
     bus(2, e.target.value);
 });
 
@@ -875,24 +883,23 @@ async function getCurrentPosition() {
     });
 }
 
-document.getElementById("from-gps")?.addEventListener("click", async e => {
-    document.getElementById("from-gps").setAttribute("disabled", true);
-    document.getElementById("findgps-loading").style.display = "block";
-    document.getElementById("gps-status").textContent = "Ti cerco";
+document.getElementById('from-gps')?.addEventListener('click', async e => {
+    document.getElementById('from-gps').setAttribute('disabled', true);
+    document.getElementById('findgps-loading').style.display = 'block';
+    document.getElementById('gps-status').textContent = 'Ti cerco';
     try {
-        if (!("geolocation" in navigator)) {
-            throw new Error("GPS non disponibile su questo browser");
+        if (!('geolocation' in navigator)) {
+            throw new Error('GPS non disponibile su questo browser');
         }
-        document.getElementById("gps-status").textContent =
-            "Dimmi dove sei :))";
+        document.getElementById('gps-status').textContent =
+            'Dimmi dove sei :))';
 
         const coords = await getCurrentPosition();
         console.log(coords);
         const { latitude, longitude, accuracy } = coords;
 
-        document.getElementById(
-            "gps-status"
-        ).innerHTML = `👌 sei a ${latitude}, ${longitude} (± ${accuracy}m)<br /><span style="color: gray">(p.s. non ancora implementato sry)</span>`;
+        document.getElementById('gps-status').innerHTML =
+            `👌 sei a ${latitude}, ${longitude} (± ${accuracy}m)<br /><span style="color: gray">(p.s. non ancora implementato sry)</span>`;
     } catch (err) {
         let html;
         if (err instanceof GeolocationPositionError) {
@@ -907,23 +914,23 @@ document.getElementById("from-gps")?.addEventListener("click", async e => {
                         style="width: 300px"
                     />`;
             } else if (err.code === 2) {
-                html = "hai il dispositivo brocco, non mi da un cazzo";
+                html = 'hai il dispositivo brocco, non mi da un cazzo';
             } else if (err.code === 3) {
-                html = "hai il dispositivo ritardato (timeout), mi spiace";
+                html = 'hai il dispositivo ritardato (timeout), mi spiace';
             }
         } else {
-            html = "errore ambiguo: " + (err.message || err.toString());
+            html = `errore ambiguo: ${err.message || err.toString()}`;
         }
-        document.getElementById("gps-status").innerHTML = html || err;
+        document.getElementById('gps-status').innerHTML = html || err;
     } finally {
-        document.getElementById("from-gps").removeAttribute("disabled");
-        document.getElementById("findgps-loading").style.display = "none";
+        document.getElementById('from-gps').removeAttribute('disabled');
+        document.getElementById('findgps-loading').style.display = 'none';
     }
-    document.getElementById("from-gps").removeAttribute("disabled");
+    document.getElementById('from-gps').removeAttribute('disabled');
 
-    e.target.value.startsWith("MO")
-        ? bus(2, e.target.value, undefined, undefined, "seta")
-        : bus(2, e.target.value, undefined, undefined, "tper");
+    e.target.value.startsWith('MO')
+        ? bus(2, e.target.value, undefined, undefined, 'seta')
+        : bus(2, e.target.value, undefined, undefined, 'tper');
 });
 
 function isBefore(hhmmStr) {
@@ -944,7 +951,7 @@ function isBefore(hhmmStr) {
  */
 async function _fetchNews() {
     try {
-        const { data } = await axios.get("/news");
+        const { data } = await axios.get('/news');
         return data;
     } catch (error) {
         console.error(error);
@@ -955,29 +962,29 @@ async function _fetchNews() {
 async function notizie() {
     const news = await _fetchNews();
     if (!news) {
-        document.getElementById("ultime-notizie").innerHTML =
-            "😔 Errore nel caricamento delle notizie";
+        document.getElementById('ultime-notizie').innerHTML =
+            '😔 Errore nel caricamento delle notizie';
         return;
     }
 
-    document.getElementById("ultime-notizie").innerHTML = "";
+    document.getElementById('ultime-notizie').innerHTML = '';
 
-    console.log("news", news);
+    console.log('news', news);
 
     const itemsPerPage = 4;
-    const newsList = document.getElementById("ultime-notizie");
+    const newsList = document.getElementById('ultime-notizie');
     const newsCount = news.length;
 
     // create pagination element
-    const pagination = document.createElement("nav");
-    pagination.setAttribute("aria-label", "Page navigation");
+    const pagination = document.createElement('nav');
+    pagination.setAttribute('aria-label', 'Page navigation');
 
-    const paginationList = document.createElement("ul");
+    const paginationList = document.createElement('ul');
     paginationList.classList.add(
-        "pagination",
-        "news-pagination",
-        "justify-content-center",
-        "mt-1"
+        'pagination',
+        'news-pagination',
+        'justify-content-center',
+        'mt-1'
     );
 
     // calculate number of pages
@@ -985,15 +992,15 @@ async function notizie() {
 
     // create pagination items
     for (let i = 1; i <= pageCount; i++) {
-        const li = document.createElement("li");
-        li.classList.add("page-item");
+        const li = document.createElement('li');
+        li.classList.add('page-item');
 
-        const a = document.createElement("a");
-        a.classList.add("page-link");
-        a.href = "#";
+        const a = document.createElement('a');
+        a.classList.add('page-link');
+        a.href = '#';
         a.textContent = i;
 
-        a.addEventListener("click", event => {
+        a.addEventListener('click', event => {
             event.preventDefault();
             showPage(i);
         });
@@ -1012,130 +1019,130 @@ async function notizie() {
         const startIndex = (page - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
 
-        const div = document.createElement("div");
-        div.classList.add("card-group", "overflow-auto", "scrollbar-hidden");
+        const div = document.createElement('div');
+        div.classList.add('card-group', 'overflow-auto', 'scrollbar-hidden');
 
         for (const [i, e] of document
-            .querySelector(".news-pagination")
+            .querySelector('.news-pagination')
             .childNodes.entries()) {
-            if (i === page - 1) e.classList.add("active");
-            else e.classList.remove("active");
+            if (i === page - 1) e.classList.add('active');
+            else e.classList.remove('active');
         }
 
         for (let i = startIndex; i < endIndex && i < newsCount; i++) {
             const n = news[i];
 
-            const card = document.createElement("div");
+            const card = document.createElement('div');
             card.classList.add(
-                "card",
-                "border-0",
-                "bg-light",
-                "me-2",
-                "mb-2",
-                "pt-2",
-                "flex-row",
-                "flex-sm-column"
+                'card',
+                'border-0',
+                'bg-light',
+                'me-2',
+                'mb-2',
+                'pt-2',
+                'flex-row',
+                'flex-sm-column'
             );
 
-            const imgContainer = document.createElement("div");
+            const imgContainer = document.createElement('div');
             imgContainer.classList.add(
-                "d-flex",
-                "justify-content-center",
-                "align-items-center",
-                "ms-2"
+                'd-flex',
+                'justify-content-center',
+                'align-items-center',
+                'ms-2'
             );
 
-            const img = document.createElement("img");
-            img.src = "/img/" + n.agency.replace(/\W/g, "") + ".png";
-            img.alt = n.agency + " agency logo";
-            img.classList.add("bus-logo");
-            img.style.width = "2rem";
-            img.style.height = "2rem";
-            img.style.objectFit = "contain";
-            img.loading = "lazy";
+            const img = document.createElement('img');
+            img.src = `/img/${n.agency.replace(/\W/g, '')}.png`;
+            img.alt = `${n.agency} agency logo`;
+            img.classList.add('bus-logo');
+            img.style.width = '2rem';
+            img.style.height = '2rem';
+            img.style.objectFit = 'contain';
+            img.loading = 'lazy';
 
             imgContainer.appendChild(img);
             card.appendChild(imgContainer);
 
-            const cardBody = document.createElement("div");
-            cardBody.classList.add("card-body", "p-2");
+            const cardBody = document.createElement('div');
+            cardBody.classList.add('card-body', 'p-2');
 
             // Tooltip
             // create the popover content
-            const popoverContent = document.createElement("div");
+            const popoverContent = document.createElement('div');
 
-            const popoverTitle = document.createElement("h5");
-            popoverTitle.classList.add("card-title", "mb-0");
-            popoverTitle.style.fontSize = "1rem";
+            const popoverTitle = document.createElement('h5');
+            popoverTitle.classList.add('card-title', 'mb-0');
+            popoverTitle.style.fontSize = '1rem';
             popoverTitle.textContent = n.type;
 
             // popoverContent.appendChild(popoverTitle);
 
-            const popoverImg = document.createElement("img");
+            const popoverImg = document.createElement('img');
             popoverImg.src = n.image; // assume every news object has an "image" property
-            popoverImg.alt = n.type + " image";
-            popoverImg.classList.add("img-fluid", "my-3");
+            popoverImg.alt = `${n.type} image`;
+            popoverImg.classList.add('img-fluid', 'my-3');
             popoverContent.appendChild(popoverImg);
 
-            const popoverDesc = document.createElement("p");
-            popoverDesc.classList.add("card-text");
+            const popoverDesc = document.createElement('p');
+            popoverDesc.classList.add('card-text');
             popoverDesc.textContent = n.title;
             popoverContent.appendChild(popoverDesc);
 
-            const popoverBtn = document.createElement("a");
+            const popoverBtn = document.createElement('a');
             popoverBtn.href = n.url;
-            popoverBtn.classList.add("btn", "btn-primary", "mt-3");
-            popoverBtn.textContent = "Read more";
+            popoverBtn.classList.add('btn', 'btn-primary', 'mt-3');
+            popoverBtn.textContent = 'Read more';
             popoverContent.appendChild(popoverBtn);
 
             // const popover =
             refreshPopovers();
 
             // add the popover to the card body
-            cardBody.setAttribute("data-bs-toggle", "popover");
-            cardBody.setAttribute("data-bs-placement", "top");
-            cardBody.setAttribute("data-bs-content", popoverContent.innerHTML);
-            cardBody.setAttribute("title", n.type);
+            cardBody.setAttribute('data-bs-toggle', 'popover');
+            cardBody.setAttribute('data-bs-placement', 'top');
+            cardBody.setAttribute('data-bs-content', popoverContent.innerHTML);
+            cardBody.setAttribute('title', n.type);
 
             // cardBody.appendChild(popoverTrigger);
 
-            const cardTitle = document.createElement("h5");
-            cardTitle.classList.add("card-title", "mb-0");
-            cardTitle.style.fontSize = "1rem";
+            const cardTitle = document.createElement('h5');
+            cardTitle.classList.add('card-title', 'mb-0');
+            cardTitle.style.fontSize = '1rem';
             cardTitle.textContent = n.type;
             cardBody.appendChild(cardTitle);
 
-            const cardDesc = document.createElement("p");
-            cardDesc.classList.add("card-title", "mb-0");
-            cardDesc.style.fontSize = "1rem";
+            const cardDesc = document.createElement('p');
+            cardDesc.classList.add('card-title', 'mb-0');
+            cardDesc.style.fontSize = '1rem';
 
-            cardDesc.style.display = "-webkit-box";
+            cardDesc.style.display = '-webkit-box';
             cardDesc.style.webkitLineClamp = 3;
-            cardDesc.style.webkitBoxOrient = "vertical";
-            cardDesc.style.overflow = "hidden";
+            cardDesc.style.webkitBoxOrient = 'vertical';
+            cardDesc.style.overflow = 'hidden';
             // cardDesc.style.wordWrap = "normal";
-            cardDesc.style.whiteSpace = "normal";
-            cardDesc.style.overflowWrap = "break-word";
+            cardDesc.style.whiteSpace = 'normal';
+            cardDesc.style.overflowWrap = 'break-word';
             // cardDesc.style.wordBreak = "break-all";
 
             cardDesc.textContent = n.title;
             cardBody.appendChild(cardDesc);
 
-            const cardText = document.createElement("p");
-            cardText.classList.add("card-text", "text-secondary", "mb-1");
+            const cardText = document.createElement('p');
+            cardText.classList.add('card-text', 'text-secondary', 'mb-1');
             cardText.textContent =
                 // dateFns.format(n.date, "DD/MM/YYYY") + " - " + n.agency;
-                dateFns.format(n.date, "DD/MM/YYYY") +
-                " - " +
-                new URL(n.url).hostname.replace("www.", "");
+                dateFns.format(n.date, 'DD/MM/YYYY') +
+                ' - ' +
+                new URL(n.url).hostname.replace('www.', '');
             // cardText.style.textTransform = "uppercase";
             cardBody.appendChild(cardText);
 
-            const cardLink = document.createElement("a");
+            const cardLink = document.createElement('a');
             cardLink.href = n.url;
-            cardLink.setAttribute("rel", "noopener noreferrer");
-            cardLink.setAttribute("target", "_blank");
-            cardLink.classList.add("stretched-link");
+            cardLink.setAttribute('rel', 'noopener noreferrer');
+            cardLink.setAttribute('target', '_blank');
+            cardLink.classList.add('stretched-link');
             cardBody.appendChild(cardLink);
 
             card.appendChild(cardBody);
@@ -1143,7 +1150,7 @@ async function notizie() {
         }
 
         // remove existing list if any
-        const existingList = newsList.querySelector("div");
+        const existingList = newsList.querySelector('div');
         if (existingList) {
             newsList.removeChild(existingList);
         }
@@ -1170,44 +1177,44 @@ notizie();
 
 if (trenoParam) {
     treno(trenoParam, daParam);
-} else if (isBefore("08:05")) {
-    treno(3907, "S05037");
-} else if (isBefore("08:20")) {
-    treno(17425, "S05037");
-} else if (isBefore("08:42")) {
-    treno(17407, "S05037");
-} else if (isBefore("09:05")) {
-    treno(2067, "S05037");
-} else if (isBefore("12:05")) {
-    treno(3917, "S05037");
-} else if (isBefore("12:33")) {
-    treno(3912, "S05043");
-} else if (isBefore("12:50")) {
-    treno(17414, "S05043");
-} else if (isBefore("13:33")) {
-    treno(3914, "S05043");
-} else if (isBefore("13:50")) {
-    treno(2474, "S05043");
-} else if (isBefore("14:33")) {
-    treno(3916, "S05043");
-} else if (isBefore("14:50")) {
-    treno(17416, "S05043");
-} else if (isBefore("15:33")) {
-    treno(3918, "S05043");
-} else if (isBefore("15:50")) {
-    treno(2478, "S05043");
-} else if (isBefore("16:33")) {
-    treno(3920, "S05043");
-} else if (isBefore("16:54")) {
-    treno(17418, "S05043");
-} else if (isBefore("17:33")) {
-    treno(3922, "S05043");
-} else if (isBefore("17:50")) {
-    treno(2482, "S05043");
-} else if (isBefore("18:33")) {
-    treno(3924, "S05043");
+} else if (isBefore('08:05')) {
+    treno(3907, 'S05037');
+} else if (isBefore('08:20')) {
+    treno(17425, 'S05037');
+} else if (isBefore('08:42')) {
+    treno(17407, 'S05037');
+} else if (isBefore('09:05')) {
+    treno(2067, 'S05037');
+} else if (isBefore('12:05')) {
+    treno(3917, 'S05037');
+} else if (isBefore('12:33')) {
+    treno(3912, 'S05043');
+} else if (isBefore('12:50')) {
+    treno(17414, 'S05043');
+} else if (isBefore('13:33')) {
+    treno(3914, 'S05043');
+} else if (isBefore('13:50')) {
+    treno(2474, 'S05043');
+} else if (isBefore('14:33')) {
+    treno(3916, 'S05043');
+} else if (isBefore('14:50')) {
+    treno(17416, 'S05043');
+} else if (isBefore('15:33')) {
+    treno(3918, 'S05043');
+} else if (isBefore('15:50')) {
+    treno(2478, 'S05043');
+} else if (isBefore('16:33')) {
+    treno(3920, 'S05043');
+} else if (isBefore('16:54')) {
+    treno(17418, 'S05043');
+} else if (isBefore('17:33')) {
+    treno(3922, 'S05043');
+} else if (isBefore('17:50')) {
+    treno(2482, 'S05043');
+} else if (isBefore('18:33')) {
+    treno(3924, 'S05043');
 } else {
-    treno(17400, "S05043");
+    treno(17400, 'S05043');
 }
 
 autocompleteBS(autoCompleteConfig);
@@ -1216,7 +1223,7 @@ function refreshPopovers() {
     const popoverTriggerList = document.querySelectorAll(
         '[data-bs-toggle="popover"]'
     );
-    const popoverList = [...popoverTriggerList].map(
+    const _popoverList = [...popoverTriggerList].map(
         popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl)
     );
 }
