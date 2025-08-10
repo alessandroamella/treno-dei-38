@@ -16,11 +16,9 @@ import {
     CalendarDates as GTFSCalendarDates
 } from "gtfs-types";
 import JSZip from "jszip";
-import fs from "fs";
-import path from "path";
-import { writeFile } from "fs/promises";
 import CsvParser from "../utils/CsvParser";
 import { getRouteNameException } from "./RouteNameExceptions";
+import GTFSDatabase from "../utils/GTFSDatabase";
 
 interface GTFS {
     routes: GTFSRoute[];
@@ -84,10 +82,7 @@ class Tper {
     private static isCaching: boolean = false;
     private static cacheDate: Moment | null = null;
 
-    private static gtfsBasePath = path.join(
-        process.cwd(),
-        "./stops/bologna-gtfs/"
-    );
+    private static gtfsDatabase = GTFSDatabase.getInstance();
 
     private static realTimeUrl =
         "https://hellobuswsweb.tper.it/web-services/hello-bus.asmx/QueryHellobus";
@@ -581,16 +576,14 @@ class Tper {
         return latestVersion;
     }
 
-    // Helper function for getGTFSData, not to be used elsewhere
+    // Helper function for populating SQLite database, not to be used elsewhere
     private static async _fetchAndParseGTFSData(force = false): Promise<null> {
         if (
             !force &&
-            // Tper.gtfsCache &&
             Tper.gtfsCacheDate &&
             moment().diff(Tper.gtfsCacheDate, "days") <= 1
         ) {
             logger.debug("TPER GTFS data already updated, not fetching");
-            // return Tper.gtfsCache;
             return null;
         }
 
@@ -615,14 +608,6 @@ class Tper {
 
         const zip = await JSZip.loadAsync(response.data);
 
-        // const gtfsCache: GTFS = {
-        //     routes: undefined,
-        //     trips: undefined,
-        //     stops: undefined,
-        //     stop_times: undefined,
-        //     calendar_dates: undefined
-        // };
-
         const files = {
             routes: "routes.txt",
             trips: "trips.txt",
@@ -630,6 +615,9 @@ class Tper {
             stop_times: "stop_times.txt",
             calendar_dates: "calendar_dates.txt"
         };
+
+        // Clear existing data
+        Tper.gtfsDatabase.clearAllTables();
 
         for (const key in files) {
             logger.debug(
@@ -649,22 +637,33 @@ class Tper {
                 trim: true
             });
 
-            // gtfsCache[<keyof typeof files>key] = parsedData;
-
             logger.debug(
                 "Parsed TPER GTFS file " + files[<keyof typeof files>key]
             );
 
-            const jsonFile = file.replace(".txt", ".json");
-            await writeFile(
-                path.join(Tper.gtfsBasePath, jsonFile),
-                JSON.stringify(parsedData, null, 2)
-            );
+            // Insert data into SQLite database instead of writing JSON files
+            switch (key) {
+                case 'routes':
+                    Tper.gtfsDatabase.insertRoutes(parsedData);
+                    break;
+                case 'trips':
+                    Tper.gtfsDatabase.insertTrips(parsedData);
+                    break;
+                case 'stops':
+                    Tper.gtfsDatabase.insertStops(parsedData);
+                    break;
+                case 'stop_times':
+                    Tper.gtfsDatabase.insertStopTimes(parsedData);
+                    break;
+                case 'calendar_dates':
+                    Tper.gtfsDatabase.insertCalendarDates(parsedData);
+                    break;
+            }
         }
 
-        // Tper.gtfsCache = gtfsCache;
         Tper.gtfsCacheDate = moment();
-        // return gtfsCache;
+
+        logger.info("TPER GTFS data successfully imported to SQLite database");
 
         return null;
     }
@@ -674,18 +673,37 @@ class Tper {
     ): Promise<GTFS[K] | null> {
         await Tper._fetchAndParseGTFSData();
 
-        const p = path.join(Tper.gtfsBasePath, datum + ".json");
+        let gtfsData: GTFS[K];
 
-        if (!fs.existsSync(p)) {
-            logger.error("No GTFS file in getGTFSData");
+        try {
+            switch (datum) {
+                case 'routes':
+                    gtfsData = Tper.gtfsDatabase.getAllRoutes() as GTFS[K];
+                    break;
+                case 'trips':
+                    gtfsData = Tper.gtfsDatabase.getAllTrips() as GTFS[K];
+                    break;
+                case 'stops':
+                    gtfsData = Tper.gtfsDatabase.getAllStops() as GTFS[K];
+                    break;
+                case 'stop_times':
+                    gtfsData = Tper.gtfsDatabase.getAllStopTimes() as GTFS[K];
+                    break;
+                case 'calendar_dates':
+                    gtfsData = Tper.gtfsDatabase.getAllCalendarDates() as GTFS[K];
+                    break;
+                default:
+                    logger.error("Unknown GTFS data type: " + datum);
+                    return null;
+            }
+        } catch (err) {
+            logger.error("Error while fetching GTFS data from SQLite: " + datum);
+            logger.error(err);
             return null;
         }
 
-        const gtfsStr = fs.readFileSync(p, { encoding: "utf-8" });
-        let gtfsData: GTFS[K] = JSON.parse(gtfsStr);
-
         if (!gtfsData) {
-            logger.error("No GTFS data in getGTFSData");
+            logger.error("No GTFS data in database for: " + datum);
             return null;
         }
 
@@ -697,35 +715,14 @@ class Tper {
             })) as GTFS[K];
         }
 
-        logger.debug("GTFS data fetched for " + datum);
+        logger.debug("GTFS data fetched from SQLite for " + datum);
 
         return gtfsData || null;
-
-        // try {
-        //     const f = await readFile(
-        //         path.join(Tper.gtfsBasePath, datum + ".json"),
-        //         { encoding: "utf-8" }
-        //     );
-
-        //     const obj = JSON.parse(f);
-
-        //     if (!Array.isArray(obj) || obj.some(s => !s)) {
-        //         throw new Error(`Invalid ${datum} obj in getGTFSData: ${f}`);
-        //     }
-
-        //     return obj as GTFSStopTime[];
-        // } catch (err) {
-        //     logger.error("Error while reading GTFS " + datum);
-        //     logger.error(err);
-        //     return null;
-        // }
     }
 
     private async findClosestGTFSTrip(
         realTimeData: Corsa,
-        stopId: string,
-        _gtfsTrips: GTFSTrip[],
-        _gtfsStopTimes: GTFSStopTime[]
+        stopId: string
     ): Promise<[trip: GTFSTrip, gtfsArrival: Moment] | null> {
         let minDifference = Infinity;
         let closestTrip: GTFSTrip | null = null;
@@ -742,20 +739,28 @@ class Tper {
             }`
         );
 
-        const gtfsTrips = _gtfsTrips?.filter(t =>
-            [
-                t.route_id,
-                t.route_id + t.trip_headsign,
-                t.trip_short_name
-            ].includes(getRouteNameException(realTimeData.linea))
-        );
-        const stopTimes = _gtfsStopTimes?.filter(st => st.stop_id === stopId);
+        const routeId = getRouteNameException(realTimeData.linea) || realTimeData.linea;
+        
+        // Use SQLite to find trips for the specific route
+        const routeIdVariants = [
+            routeId,
+            realTimeData.linea
+        ];
+        
+        if (realTimeData.destinazione) {
+            routeIdVariants.push(routeId + realTimeData.destinazione);
+        }
+        
+        const gtfsTrips = Tper.gtfsDatabase.findTripsByRouteIds(routeIdVariants);
+        
+        // Use SQLite to find stop times for the specific stop
+        const stopTimes = Tper.gtfsDatabase.findStopTimesForStop(stopId);
 
-        if (!gtfsTrips || !stopTimes) {
+        if (!gtfsTrips.length || !stopTimes.length) {
             logger.warn(
                 `No GTFS data in findClosestGTFSTrip for trip ${
                     realTimeData.linea
-                } (${getRouteNameException(realTimeData.linea)}`
+                } (${routeId})`
             );
 
             return null;
@@ -803,38 +808,12 @@ class Tper {
         return closestTrip && gtfsArrival ? [closestTrip, gtfsArrival] : null;
     }
 
-    private getLatestStopTimeForTrip(
-        trip: GTFSTrip,
-        stopTimes: GTFSStopTime[]
-    ): GTFSStopTime | null {
-        const lastStopTime = stopTimes.filter(
-            st => st.trip_id === trip.trip_id
-        );
-
-        if (!lastStopTime.length) return null;
-
-        lastStopTime.sort((a, b) => a.stop_sequence - b.stop_sequence);
-
-        return lastStopTime[lastStopTime.length - 1] || null;
-    }
-
-    private async getStopFromStopTime(
-        stopTime: GTFSStopTime
-    ): Promise<GTFSStop | null> {
-        const lastStop = await this.getGTFSData("stops").then(stops =>
-            stops?.find(stop => stop.stop_id === stopTime.stop_id)
-        );
-
-        return lastStop || null;
-    }
-
     public async associateRealTimeInfoWithGTFS(
         stopId: string,
         realTimeData: Corsa[]
     ): Promise<Corsa[]> {
-        const gtfsTrips = await this.getGTFSData("trips");
-        const gtfsStopTimes = await this.getGTFSData("stop_times");
-        const gtfsStops = await this.getGTFSData("stops");
+        // Ensure GTFS data is available
+        await Tper._fetchAndParseGTFSData();
 
         const promises = realTimeData.map(async tripData => {
             logger.debug(
@@ -842,19 +821,9 @@ class Tper {
                     tripData.linea
             );
 
-            if (!gtfsTrips || !gtfsStopTimes || !gtfsStops) {
-                logger.warn(
-                    "No GTFS data in associateRealTimeInfoWithGTFS for trip " +
-                        tripData.linea
-                );
-                return tripData;
-            }
-
             const closestTripAndDistance = await this.findClosestGTFSTrip(
                 tripData,
-                stopId,
-                gtfsTrips,
-                gtfsStopTimes
+                stopId
             );
 
             let gtfsArrival: Moment | null = null;
@@ -864,24 +833,13 @@ class Tper {
                     closestTripAndDistance;
                 gtfsArrival = _gtfsArrival;
 
-                const lastStopTime = this.getLatestStopTimeForTrip(
-                    associatedGTFSTrip,
-                    gtfsStopTimes
+                const lastStop = Tper.gtfsDatabase.findLastStopForTrip(
+                    associatedGTFSTrip.trip_id
                 );
 
-                if (!lastStopTime)
-                    throw new Error(
-                        "No lastStopTime in associateRealTimeInfoWithGTFS"
-                    );
-
-                const lastStop = await this.getStopFromStopTime(lastStopTime);
-
                 tripData.trip = associatedGTFSTrip;
-                tripData.destinazione =
-                    // associatedGTFSTrip.trip_headsign ||
-                    lastStop?.stop_name || null;
+                tripData.destinazione = lastStop?.stop_name || null;
                 tripData.arrivoProgrammato = gtfsArrival
-                    // .tz("Europe/Rome")
                     .format("HH:mm");
             }
 
@@ -890,7 +848,6 @@ class Tper {
                     tripData.arrivoTempoReale || tripData.arrivoProgrammato
                 } has destination "${tripData.destinazione}" and arrival time ${
                     gtfsArrival?.format("HH:mm")
-                    // ?.tz("Europe/Rome")
                 }`
             );
 
@@ -904,22 +861,24 @@ class Tper {
         gtfsTripId: string,
         minutesDelay: number
     ): Promise<TripStops[] | null> {
-        const gtfsStopTimes = await this.getGTFSData("stop_times");
-        const gtfsStops = await this.getGTFSData("stops");
+        // Ensure GTFS data is available
+        await Tper._fetchAndParseGTFSData();
 
-        if (!gtfsStopTimes || !gtfsStops) {
+        // Use SQLite to directly query stop times for the trip
+        const stopTimes = Tper.gtfsDatabase.findStopTimesForTrip(gtfsTripId);
+
+        if (!stopTimes.length) {
             logger.warn(
-                "No GTFS data in caricaFermateDaTrip for trip " + gtfsTripId
+                "No GTFS stop times in caricaFermateDaTrip for trip " + gtfsTripId
             );
             return null;
         }
 
-        const stopTimes = gtfsStopTimes.filter(st => st.trip_id === gtfsTripId);
-
         const stops: TripStops[] = [];
 
         for (const stopTime of stopTimes) {
-            const stop = gtfsStops.find(s => s.stop_id === stopTime.stop_id);
+            // Use SQLite to find the stop details
+            const stop = Tper.gtfsDatabase.findStopById(stopTime.stop_id);
 
             if (!stop) {
                 logger.warn(
@@ -932,7 +891,7 @@ class Tper {
             }
 
             const stopTimeMoment = moment(stopTime.arrival_time, "HH:mm:ss");
-            const realTimeMoment = stopTimeMoment.add(minutesDelay, "minutes");
+            const realTimeMoment = stopTimeMoment.clone().add(minutesDelay, "minutes");
 
             stops.push({
                 stop,
