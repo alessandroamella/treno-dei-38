@@ -736,7 +736,8 @@ async function loadTrips(line, tripId, minutesDelay) {
     _refresh();
 }
 
-function _trenoModal(numTreno, idOrigine) {
+// biome-ignore lint/correctness/noUnusedVariables: chiamata da HTML
+function trenoModal(numTreno, idOrigine) {
     treno(numTreno, idOrigine);
     modal.hide();
 }
