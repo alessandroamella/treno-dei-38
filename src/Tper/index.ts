@@ -597,13 +597,15 @@ class Tper {
             ?.tz('Europe/Rome')
             .format('YYYYMMDD')}&format=zip`;
 
-        logger.debug(`Fetching TPER GTFS data from ${url}`);
+        logger.info(`Fetching TPER GTFS data from ${url}`);
 
         const response = await axios.get(url, { responseType: 'arraybuffer' });
 
-        logger.debug(`TPER GTFS data fetched from ${url}`);
+        logger.info(`TPER GTFS data fetched from ${url}, loading zip...`);
 
         const zip = await JSZip.loadAsync(response.data);
+
+        logger.info('TPER GTFS zip file loaded, parsing files...');
 
         const files = {
             routes: 'routes.txt',
@@ -617,7 +619,7 @@ class Tper {
         Tper.gtfsDatabase.clearAllTables();
 
         for (const key in files) {
-            logger.debug(
+            logger.info(
                 `Parsing TPER GTFS file ${files[key as keyof typeof files]}`
             );
 
@@ -635,7 +637,7 @@ class Tper {
                 trim: true,
             });
 
-            logger.debug(
+            logger.info(
                 `Parsed TPER GTFS file ${files[key as keyof typeof files]}`
             );
 

@@ -707,34 +707,34 @@ async function loadTrips(line, tripId, minutesDelay) {
         <ul class="list-group">
             ${data
             .map(
-                e => `
-                    <li class="list-group-item btn" style="text-align: left;${!isBefore(e.realTime)
-                        ? '   background-color: lightgray;'
-                        : ''
-                    }" onclick="tripModal.hide();bus(1, ${e.stop.stop_id
-                    }, undefined, '${e.stop.stop_name}');"><strong>${e.stop.stop_name
-                    }</strong> ${e.stop.stop_id}
-                    <span class="float-end">${e.realTime &&
-                        e.realTime !== e.scheduledTime &&
-                        isBefore(e.realTime)
-                        ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
+                (e, i) => {
+                    const beforeOne = i > 0 ? data[i - 1] : null;
+                    const transited = isBefore(e.realTime, beforeOne?.realTime);
+                    return `
+                    <li class="list-group-item btn" style="text-align: left;${!transited
+                            ? '   background-color: lightgray;'
+                            : ''
+                        }" onclick="tripModal.hide();bus(1, ${e.stop.stop_id
+                        }, undefined, '${e.stop.stop_name}');"><strong>${e.stop.stop_name
+                        }</strong> ${e.stop.stop_id}
+                    <span class="float-end">${e.realTime && e.realTime !== e.scheduledTime && transited ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
                             _parseHHMM(e.scheduledTime)
                         )}</span><span style="font-weight: 600;">${
-                        // _parseHHMM(
-                        e.realTime
-                        //   )
-                        }</span>`
-                        : `<span style="${e.realTime && e.realTime !== e.scheduledTime
-                            ? ''
-                            : 'font-weight: 600;'
-                        }">${
-                        // _formattaData(_parseHHMM(
-                        e.scheduledTime
-                        // ))
-                        }</span>`
-                    }</span>
+                            // _parseHHMM(
+                            e.realTime
+                            //   )
+                            }</span>`
+                            : `<span style="${e.realTime && e.realTime !== e.scheduledTime
+                                ? ''
+                                : 'font-weight: 600;'
+                            }">${
+                            // _formattaData(_parseHHMM(
+                            e.scheduledTime
+                            // ))
+                            }</span>`
+                        }</span>
                     </li>
-            `
+            `}
             )
             .join('')}
         </ul>
@@ -938,8 +938,19 @@ document.getElementById('from-gps')?.addEventListener('click', async e => {
         : bus(2, e.target.value, undefined, undefined, 'tper');
 });
 
-function isBefore(hhmmStr) {
-    return dateFns.isBefore(new Date(), _parseHHMM(hhmmStr));
+function isBefore(hhmmStr, before) {
+    const thisDate = _parseHHMM(hhmmStr);
+    if (before) {
+        const beforeDate = _parseHHMM(before);
+        if (dateFns.isBefore(thisDate, beforeDate)) {
+            // the date before is after this one, it means it's the next day
+            return dateFns.isBefore(
+                dateFns.addDays(new Date(), 1),
+                thisDate
+            );
+        }
+    }
+    return dateFns.isBefore(new Date(), thisDate);
 }
 
 /**
