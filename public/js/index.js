@@ -85,9 +85,8 @@ async function treno(numTreno, idOrigine) {
 
     document.getElementById('treno').textContent = treno;
 
-    document.getElementById('ritardo').textContent = `${
-        ritardo >= 0 ? `+${ritardo}` : ritardo
-    } minut${ritardo === 1 ? 'o' : 'i'}`;
+    document.getElementById('ritardo').textContent = `${ritardo >= 0 ? `+${ritardo}` : ritardo
+        } minut${ritardo === 1 ? 'o' : 'i'}`;
 
     document.getElementById('ora-ultimo-rilevamento').textContent =
         oraUltimoRilevamento
@@ -257,9 +256,9 @@ function setTperBus(c, card) {
                 c.trip.trip_id,
                 c.arrivoTempoReale && c.arrivoProgrammato
                     ? dateFns.differenceInMinutes(
-                          _parseHHMM(c.arrivoTempoReale),
-                          _parseHHMM(c.arrivoProgrammato)
-                      )
+                        _parseHHMM(c.arrivoTempoReale),
+                        _parseHHMM(c.arrivoProgrammato)
+                    )
                     : 0
             );
         });
@@ -403,13 +402,13 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
     }
 
     busInterval[cardNum] = setInterval(() =>
-        // data && nomeFermata
-        //     ? fermata(nomeFermata)
-        //     :
-        {
-            if (!isLoading && !isViewingTripModal)
-                bus(cardNum, fermata, data, nomeFermata);
-        }, 30000);
+    // data && nomeFermata
+    //     ? fermata(nomeFermata)
+    //     :
+    {
+        if (!isLoading && !isViewingTripModal)
+            bus(cardNum, fermata, data, nomeFermata);
+    }, 30000);
 
     isLoading = false;
 }
@@ -519,9 +518,9 @@ async function fermate(fermata) {
     document.querySelector('.main-modal-body').innerHTML = `
         <div class="seleziona-fermate">
             ${fermata.id
-                .split(';')
-                .map(
-                    (e) => `
+            .split(';')
+            .map(
+                (e) => `
                     <div class="form-check" style="overflow: auto;">
                         <input class="form-check-input fermata-input" type="checkbox" value="${e.toString()}" id="fermata-${e.toString()}">
                         <label class="form-check-label fermata-input-label" for="fermata-${e.toString()}">
@@ -533,23 +532,22 @@ async function fermate(fermata) {
                                 loading="lazy"
                             />
                             <strong>${e.split(',')[1]}</strong>
-                            ${
-                                e.split(',').length > 1
-                                    ? e
-                                          .split(',')
-                                          .slice(2)
-                                          .map(
-                                              (f) =>
-                                                  `<span class="badge bg-secondary ms-1">${f}</span>`
-                                          )
-                                          .join('')
-                                    : ''
-                            }
+                            ${e.split(',').length > 1
+                        ? e
+                            .split(',')
+                            .slice(2)
+                            .map(
+                                (f) =>
+                                    `<span class="badge bg-secondary ms-1">${f}</span>`
+                            )
+                            .join('')
+                        : ''
+                    }
                         </label>
                     </div>
                 `
-                )
-                .join('')}
+            )
+            .join('')}
 
                 <div class="d-flex mt-2" style="justify-content: center">
                 <button
@@ -606,24 +604,21 @@ async function tabellone(stazione) {
     document.querySelector('.main-modal-body').innerHTML = `
         <ul class="list-group">
             ${data
-                .map(
-                    (e) => `
-                    <li class="list-group-item btn" style="text-align: left;" onclick="trenoModal(${
-                        e.numero
-                    }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${
-                        e.destinazione
-                    } <span class="modal-ritardo">${
-                        e.ritardo > 0
-                            ? `+${e.ritardo}m`
-                            : `${_clockEmoji(new Date(e.orarioArrivo))}👌`
+            .map(
+                (e) => `
+                    <li class="list-group-item btn" style="text-align: left;" onclick="trenoModal(${e.numero
+                    }, '${e.idOrigine}');"><strong>${e.treno}</strong> ${e.destinazione
+                    } <span class="modal-ritardo">${e.ritardo > 0
+                        ? `+${e.ritardo}m`
+                        : `${_clockEmoji(new Date(e.orarioArrivo))}👌`
                     }</span>
                     <span class="float-end">${_formattaData(
                         e.orarioArrivo
                     )}</span>
                     </li>
             `
-                )
-                .join('')}
+            )
+            .join('')}
         </ul>
     `;
     modal.show();
@@ -716,42 +711,37 @@ async function loadTrips(line, tripId, minutesDelay) {
     document.querySelector('.trip-modal-body').innerHTML = `
         <ul class="list-group">
             ${data
-                .map((e, i) => {
-                    const beforeOne = i > 0 ? data[i - 1] : null;
-                    const transited = isBefore(e.realTime, beforeOne?.realTime);
-                    return `
-                    <li class="list-group-item btn" style="text-align: left;${
-                        !transited ? '   background-color: lightgray;' : ''
-                    }" onclick="tripModal.hide();bus(1, ${
-                        e.stop.stop_id
-                    }, undefined, '${e.stop.stop_name}');"><strong>${
-                        e.stop.stop_name
+            .map((e, i) => {
+                const beforeOne = i > 0 ? data[i - 1] : null;
+                const transited = isBefore(e.realTime, beforeOne?.realTime);
+                return `
+                    <li class="list-group-item btn" style="text-align: left;${!transited ? '   background-color: lightgray;' : ''
+                    }" onclick="tripModal.hide();bus(1, ${e.stop.stop_id
+                    }, undefined, '${e.stop.stop_name}');"><strong>${e.stop.stop_name
                     }</strong> ${e.stop.stop_id}
-                    <span class="float-end">${
-                        e.realTime &&
+                    <span class="float-end">${e.realTime &&
                         e.realTime !== e.scheduledTime &&
                         transited
-                            ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
-                                  _parseHHMM(e.scheduledTime)
-                              )}</span><span style="font-weight: 600;">${
-                                  // _parseHHMM(
-                                  e.realTime
-                                  //   )
-                              }</span>`
-                            : `<span style="${
-                                  e.realTime && e.realTime !== e.scheduledTime
-                                      ? ''
-                                      : 'font-weight: 600;'
-                              }">${
-                                  // _formattaData(_parseHHMM(
-                                  e.scheduledTime
-                                  // ))
-                              }</span>`
+                        ? `<span style="text-decoration: line-through;" class="me-1">${_formattaData(
+                            _parseHHMM(e.scheduledTime)
+                        )}</span><span style="font-weight: 600;">${
+                        // _parseHHMM(
+                        e.realTime
+                        //   )
+                        }</span>`
+                        : `<span style="${e.realTime && e.realTime !== e.scheduledTime
+                            ? ''
+                            : 'font-weight: 600;'
+                        }">${
+                        // _formattaData(_parseHHMM(
+                        e.scheduledTime
+                        // ))
+                        }</span>`
                     }</span>
                     </li>
             `;
-                })
-                .join('')}
+            })
+            .join('')}
         </ul>
     `;
     // tripModal.show();
@@ -1205,6 +1195,8 @@ notizie();
 
 if (trenoParam) {
     treno(trenoParam, daParam);
+} else if (isBefore('01:25')) {
+    treno(17400, 'S05043');
 } else if (isBefore('08:05')) {
     treno(3907, 'S05037');
 } else if (isBefore('08:20')) {
