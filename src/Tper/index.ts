@@ -92,7 +92,6 @@ class Tper {
     private static newsCacheDate: Moment | null = null;
 
     // private static gtfsCache: GTFS | null = null;
-    private static gtfsCacheDate: Moment | null = null; // moment() for DEBUG
 
     private static openDataVersionCache: Moment | null = null;
     private static openDataVersionCacheDate: Moment | null = null;
@@ -575,15 +574,6 @@ class Tper {
 
     // Helper function for populating SQLite database, not to be used elsewhere
     private static async _fetchAndParseGTFSData(force = false): Promise<null> {
-        if (
-            !force &&
-            Tper.gtfsCacheDate &&
-            moment().diff(Tper.gtfsCacheDate, 'days') <= 1
-        ) {
-            logger.debug('TPER GTFS data already updated, not fetching');
-            return null;
-        }
-
         logger.info('Fetching TPER GTFS data in _fetchAndParseGTFSData');
 
         const latestDate = await Tper.fetchLatestOpenDataVersion();
@@ -593,9 +583,26 @@ class Tper {
             return null;
         }
 
-        const url = `https://solweb.tper.it/web/tools/open-data/open-data-download.aspx?source=solweb.tper.it&filename=gommagtfsbo&version=${latestDate
-            ?.tz('Europe/Rome')
-            .format('YYYYMMDD')}&format=zip`;
+        const latestVersionStr = latestDate
+            .tz('Europe/Rome')
+            .format('YYYYMMDD');
+
+        if (!force) {
+            const currentVersion = Tper.gtfsDatabase.getGtfsVersion();
+
+            if (currentVersion === latestVersionStr) {
+                logger.info(
+                    `GTFS data is already up to date (version: ${currentVersion}). Skipping download.`
+                );
+                return null;
+            }
+
+            logger.info(
+                `GTFS version update needed: current=${currentVersion || 'none'}, latest=${latestVersionStr}`
+            );
+        }
+
+        const url = `https://solweb.tper.it/web/tools/open-data/open-data-download.aspx?source=solweb.tper.it&filename=gommagtfsbo&version=${latestVersionStr}&format=zip`;
 
         logger.info(`Fetching TPER GTFS data from ${url}`);
 
@@ -661,7 +668,8 @@ class Tper {
             }
         }
 
-        Tper.gtfsCacheDate = moment();
+        // Store the GTFS version in the database after successful import
+        Tper.gtfsDatabase.setGtfsVersion(latestVersionStr);
 
         logger.info('TPER GTFS data successfully imported to SQLite database');
 

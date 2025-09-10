@@ -115,6 +115,11 @@ export class GTFSDatabase {
             );
             CREATE INDEX IF NOT EXISTS idx_calendar_date ON calendar_dates(date);
             CREATE INDEX IF NOT EXISTS idx_calendar_service_id ON calendar_dates(service_id);
+
+            CREATE TABLE IF NOT EXISTS metadata (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
         `);
 
         logger.debug('GTFS SQLite database tables initialized');
@@ -372,6 +377,29 @@ export class GTFSDatabase {
         });
         clearTransaction();
         logger.debug('Cleared all GTFS tables');
+    }
+
+    public getGtfsVersion(): string | null {
+        try {
+            const stmt = this.db.prepare(
+                'SELECT value FROM metadata WHERE key = ?'
+            );
+            const result = stmt.get('gtfs_version') as
+                | { value: string }
+                | undefined;
+            return result?.value || null;
+        } catch {
+            logger.debug('No GTFS version found in metadata table');
+            return null;
+        }
+    }
+
+    public setGtfsVersion(version: string): void {
+        const stmt = this.db.prepare(`
+            INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)
+        `);
+        stmt.run('gtfs_version', version);
+        logger.debug(`GTFS version set to: ${version}`);
     }
 
     public close(): void {
