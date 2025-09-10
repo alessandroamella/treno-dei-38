@@ -34,6 +34,12 @@ const urlParams = new URLSearchParams(window.location.search);
 const trenoParam = urlParams.get('treno');
 const daParam = urlParams.get('da');
 
+let firstSearch = true;
+setTimeout(() => {
+    // set anyways after 10s in case it didn't load a train on page load
+    firstSearch = false;
+}, 10000);
+
 async function treno(numTreno, idOrigine) {
     const numTrenoValue =
         numTreno || document.getElementById('numero-treno').value || '2463';
@@ -59,7 +65,11 @@ async function treno(numTreno, idOrigine) {
         if (err.response?.status === 400) {
             return alert(`Treno "${numTrenoValue}" non valido`);
         }
-        return alert(err.response?.data || 'Errore sconosciuto');
+        if (!firstSearch) {
+            return alert(err.response?.data || 'Errore sconosciuto');
+        }
+    } finally {
+        firstSearch = false;
     }
 
     console.log('treno', data);
