@@ -14,16 +14,8 @@
     },
     "formatter": {
         "enabled": true,
-        "formatWithErrors": false,
         "indentStyle": "space",
-        "indentWidth": 4,
-        "lineEnding": "lf",
-        "lineWidth": 80,
-        "attributePosition": "auto",
-        "bracketSameLine": false,
-        "bracketSpacing": true,
-        "expand": "auto",
-        "useEditorconfig": true
+        "indentWidth": 4
     },
     "linter": {
         "enabled": true,
@@ -39,7 +31,7 @@
             "quoteProperties": "asNeeded",
             "trailingCommas": "es5",
             "semicolons": "always",
-            "arrowParentheses": "asNeeded",
+            "arrowParentheses": "always",
             "bracketSameLine": false,
             "quoteStyle": "single",
             "attributePosition": "auto",

@@ -30,10 +30,10 @@ function start() {
     getLocation();
     const _interval = setInterval(getLocation, 5000);
 
-    socket.on('error', err => {
+    socket.on('error', (err) => {
         outputElem.textContent = err;
     });
-    socket.on('ok-pos', date => {
+    socket.on('ok-pos', (date) => {
         outputElem.textContent = `BROADCAST a ${new Date(date).toLocaleTimeString()}`;
     });
 }

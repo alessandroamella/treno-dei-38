@@ -187,7 +187,7 @@ class Tper {
 
             trips = str
                 .split(', ')
-                .map(e => {
+                .map((e) => {
                     const s = e.split(' ');
                     const busNumIndex = e.search(/\(Bus[0-9]+ CON PEDANA\)/g);
                     let busNum: string | undefined;
@@ -216,7 +216,7 @@ class Tper {
                     noTrips = false;
                     return t;
                 })
-                .filter(e => !!e) as Corsa[];
+                .filter((e) => !!e) as Corsa[];
         } catch (err) {
             logger.error('Error while fetching TPER routes');
             logger.error(err);
@@ -286,7 +286,7 @@ class Tper {
 
         for (const linea of linee ? linee : [undefined]) {
             const job = Tper._getTripsForRoute(stopId, linea)
-                .then(corsa => {
+                .then((corsa) => {
                     if (isFnErr(corsa)) {
                         logger.error('TPER contains fnErr');
                         logger.error(corsa);
@@ -294,7 +294,7 @@ class Tper {
                     }
                     corse.push(...corsa);
                 })
-                .catch(err => {
+                .catch((err) => {
                     logger.error('TPER request error');
                     logger.error(err);
                     return null;
@@ -386,7 +386,7 @@ class Tper {
 
             logger.info('Fermate TPER caricate');
             Tper.fermate = Object.entries(stops).map(
-                e =>
+                (e) =>
                     ({
                         stopId: e[0],
                         stopName: e[1].stopName,
@@ -428,7 +428,8 @@ class Tper {
         }
 
         return (
-            (Tper.fermate as TperStop[]).find(s => s.stopId === stopId) || null
+            (Tper.fermate as TperStop[]).find((s) => s.stopId === stopId) ||
+            null
         );
     }
 
@@ -468,7 +469,7 @@ class Tper {
     private static _mapToNews(items: TperNewsItem[]): News[] {
         const newsList: News[] = [];
 
-        items.forEach(item => {
+        items.forEach((item) => {
             // console.log("TPER news item:", item);
             const news: News = {
                 title: item.title,
@@ -720,8 +721,10 @@ class Tper {
             return null;
         }
 
-        gtfsTrips.forEach(trip => {
-            const stopTime = stopTimes.find(st => st.trip_id === trip.trip_id);
+        gtfsTrips.forEach((trip) => {
+            const stopTime = stopTimes.find(
+                (st) => st.trip_id === trip.trip_id
+            );
 
             if (stopTime) {
                 const _gtfsArrival = moment(stopTime.arrival_time, 'HH:mm:ss');
@@ -745,7 +748,7 @@ class Tper {
                 } has closest GTFS trip ${
                     (closestTrip as GTFSTrip)?.trip_id
                 } at ${moment(
-                    stopTimes.find(st => st.trip_id === closestTrip?.trip_id)
+                    stopTimes.find((st) => st.trip_id === closestTrip?.trip_id)
                         ?.arrival_time,
                     'HH:mm:ss'
                 ).format('HH:mm')}`
@@ -769,7 +772,7 @@ class Tper {
         // Ensure GTFS data is available
         await Tper._fetchAndParseGTFSData();
 
-        const promises = realTimeData.map(async tripData => {
+        const promises = realTimeData.map(async (tripData) => {
             logger.debug(
                 'Associating GTFS data with TPER data for trip of line ' +
                     tripData.linea

@@ -64,15 +64,15 @@ class Trenitalia {
 
         const risultati = (data as string).trim().split('\n');
         const mapped = risultati
-            .map(r => r.split('|')[1].split('-').slice(1))
-            .map(r => ({
+            .map((r) => r.split('|')[1].split('-').slice(1))
+            .map((r) => ({
                 stazionePartenza: r[0],
                 dataPartenzaMs: r[1],
             }));
 
         const { stazionePartenza, dataPartenzaMs } =
             (this.idOrigine &&
-                mapped.find(e => e.stazionePartenza === this.idOrigine)) ||
+                mapped.find((e) => e.stazionePartenza === this.idOrigine)) ||
             mapped[0];
 
         this.stazionePartenza = stazionePartenza;
@@ -114,7 +114,7 @@ class Trenitalia {
             );
 
             return (data as StatoTreno[])
-                .map(e => ({
+                .map((e) => ({
                     ...Trenitalia.formattaOutput(e),
                     orarioArrivo: e.orarioPartenza,
                     idOrigine: e.codOrigine,
@@ -135,7 +135,7 @@ class Trenitalia {
             treno: statoTreno.compNumeroTreno,
             origine: statoTreno.origine,
             destinazione: statoTreno.destinazione,
-            fermate: statoTreno.fermate?.map(f => ({
+            fermate: statoTreno.fermate?.map((f) => ({
                 stazione: f.stazione,
                 id: f.id,
                 dataProgrammata: f.partenza_teorica || f.programmata,
@@ -165,8 +165,8 @@ class Trenitalia {
             const stazioni = (data as string)
                 .trim()
                 .split('\n')
-                .map(s => s.trim().split('|'));
-            return stazioni.map(s => ({ nome: s[0], id: s[1] }));
+                .map((s) => s.trim().split('|'));
+            return stazioni.map((s) => ({ nome: s[0], id: s[1] }));
         } catch (err) {
             logger.error('Errore nella ricerca stazione');
             logger.error(err);
@@ -212,8 +212,8 @@ class Trenitalia {
 
     private static _mapToNews(items: TrenitaliaNewsItem[]): News[] {
         const news: News[] = items
-            .filter(item => item.title !== undefined)
-            .map(item => ({
+            .filter((item) => item.title !== undefined)
+            .map((item) => ({
                 title: item.title!,
                 agency: 'trenitalia',
                 date: moment(item.pubDate),

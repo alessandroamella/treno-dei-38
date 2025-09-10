@@ -51,10 +51,10 @@ export default class StopSearcher {
         const _t = await this.t.cercaFermatePerNome(q);
         let stops: Fuse.FuseResult<StopResult>[] = [
             ...(<Fuse.FuseResult<Stop & { agency: AgencyType }>[]>(
-                _s.map(e => ({ ...e, item: { ...e.item, agency: 'seta' } }))
+                _s.map((e) => ({ ...e, item: { ...e.item, agency: 'seta' } }))
             )),
             ...(<Fuse.FuseResult<TperStop & { agency: AgencyType }>[]>(
-                _t.map(e => ({ ...e, item: { ...e.item, agency: 'tper' } }))
+                _t.map((e) => ({ ...e, item: { ...e.item, agency: 'tper' } }))
             )),
         ];
 
@@ -64,7 +64,7 @@ export default class StopSearcher {
         logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati:`);
         logger.debug(JSON.stringify(stops.slice(0, 3), null, 2));
 
-        const _stops: StopResult[] = stops.map(e => e.item);
+        const _stops: StopResult[] = stops.map((e) => e.item);
 
         const _searchedStops: SearchedStop[] = [];
 
@@ -72,7 +72,7 @@ export default class StopSearcher {
             let found = false;
             if (removeDuplicatesByName) {
                 const _stop = _searchedStops.find(
-                    e =>
+                    (e) =>
                         e.stopName.toLowerCase() ===
                         stop.stopName.toLowerCase() /* && e.agency === stop.agency */
                 );

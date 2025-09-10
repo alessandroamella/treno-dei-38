@@ -17,7 +17,7 @@ const {
 const combinedLogsFile = path.join('./logs/combined.log');
 const errorsLogsFile = path.join('./logs/error.log');
 
-const errorStackFormat = format(info => {
+const errorStackFormat = format((info) => {
     if (info instanceof Error) {
         return {
             ...info,
@@ -30,7 +30,7 @@ const errorStackFormat = format(info => {
     return info;
 });
 
-const prettyJson = printf(info => {
+const prettyJson = printf((info) => {
     if (info.message?.constructor === Object) {
         info.message = JSON.stringify(info.message, null, 4);
     }
@@ -51,7 +51,7 @@ export const logger = createLogger({
             format: combine(
                 colorize(),
                 printf(
-                    info =>
+                    (info) =>
                         `${info.timestamp} ${info.level} [${info.label}]: ${info.message}`
                 ),
                 errorStackFormat(),

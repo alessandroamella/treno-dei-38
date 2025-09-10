@@ -75,7 +75,7 @@ class SanCesario {
 
         try {
             // Create an array of GET request promises for all sources.
-            const promises = SanCesario.sources.map(source =>
+            const promises = SanCesario.sources.map((source) =>
                 axios.get<PloneApiResponse>(source.url)
             );
 
@@ -141,8 +141,8 @@ class SanCesario {
         }
 
         return items
-            .filter(item => item?.title && item['@id'])
-            .map(item => ({
+            .filter((item) => item?.title && item['@id'])
+            .map((item) => ({
                 title: item.title,
                 agency: 'sancesario',
                 // Use the 'effective' date if available, otherwise fall back to 'created' date.

@@ -54,7 +54,7 @@ class Seta {
             return [];
         }
 
-        const corse: Corsa[] = data.arrival.services.map(s => ({
+        const corse: Corsa[] = data.arrival.services.map((s) => ({
             id: s.codice_corsa,
             linea: s.service,
             destinazione: s.destination,
@@ -70,7 +70,7 @@ class Seta {
         for (let i = 0; i < corse.length; i++) {
             if (corse[i].arrivoTempoReale) {
                 const j = corse.findIndex(
-                    c => c.id === corse[i].id && !c.arrivoTempoReale
+                    (c) => c.id === corse[i].id && !c.arrivoTempoReale
                 );
                 if (j !== -1) {
                     logger.debug(
@@ -109,7 +109,7 @@ class Seta {
 
             const obj = JSON.parse(f);
 
-            if (!Array.isArray(obj) || obj.some(s => !isStop(s))) {
+            if (!Array.isArray(obj) || obj.some((s) => !isStop(s))) {
                 throw new Error(`Invalid stops obj: ${f}`);
             }
 
@@ -134,7 +134,9 @@ class Seta {
         }
 
         // logger.debug("Cerco fermata " + stopId);
-        return (Seta.fermate as Stop[]).find(s => s.stopId === stopId) || null;
+        return (
+            (Seta.fermate as Stop[]).find((s) => s.stopId === stopId) || null
+        );
     }
 
     public async cercaFermatePerNome(

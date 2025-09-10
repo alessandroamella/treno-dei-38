@@ -46,8 +46,8 @@ class FerrovieInfo {
 
     private static _mapToNews(items: FerrovieNewsItem[]): News[] {
         const news: News[] = items
-            .filter(item => item.title !== undefined)
-            .map(item => ({
+            .filter((item) => item.title !== undefined)
+            .map((item) => ({
                 title: item.title!,
                 agency: 'ferrovie.info',
                 date: moment(item.pubDate),

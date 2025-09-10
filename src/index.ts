@@ -78,7 +78,7 @@ app.get('/fermata/:fermata', async (req, res) => {
         return res.sendStatus(400);
     }
 
-    const stopsStrArr = fermata.split(',').map(e => e.trim());
+    const stopsStrArr = fermata.split(',').map((e) => e.trim());
     const stops = await stopSearcher.findMultipleById({
         q: stopsStrArr,
         agency: isAgencyType(agency) ? agency : undefined,
@@ -110,7 +110,7 @@ app.get('/fermatadanome', async (req, res) => {
             const tperStop = { ...s, stopName: '' };
             if (isTperStop(tperStop)) {
                 tperStop.routes = tperStop.routes.map(
-                    e =>
+                    (e) =>
                         (isRouteNameException(e) && getRouteNameException(e)) ||
                         e
                 );
@@ -121,12 +121,12 @@ app.get('/fermatadanome', async (req, res) => {
     logger.debug(`Ricerca fermata fuzzy ${stops.length} risultati con q=${q}`);
 
     return res.json(<{ nome: string; id: string }[]>stops.map(
-            e =>
+            (e) =>
                 <{ nome: string; id: string }>{
                     nome: e.stopName,
                     id: e.stops
                         .map(
-                            f =>
+                            (f) =>
                                 `${f.agency},${f.stopId}${
                                     (f as Omit<TperStop, 'stopName'>).routes
                                         ? `,${(f as Omit<TperStop, 'stopName'>).routes.join(',')}`
@@ -145,7 +145,7 @@ app.get('/bus', async (req, res) => {
         return res.sendStatus(400);
     }
 
-    const stopsStrArr = q.split(',').map(e => e.trim());
+    const stopsStrArr = q.split(',').map((e) => e.trim());
 
     logger.debug(`Cerco fermate: ${stopsStrArr}`);
 
@@ -165,7 +165,7 @@ app.get('/bus', async (req, res) => {
                       ? await t.caricaCorse(stop.stopId)
                       : null;
             if (c) {
-                corse.push(...c.map(e => ({ ...e, agency: stop.agency })));
+                corse.push(...c.map((e) => ({ ...e, agency: stop.agency })));
             } else {
                 logger.warn(
                     `c falsy in busdanome with stop ${JSON.stringify(stop)}`
@@ -277,7 +277,7 @@ app.get('/fermatetrip', async (req, res) => {
     logger.debug(`Ricerca fermate trip ${stops.length} risultati`);
 
     return res.json(
-        stops.map(s => ({
+        stops.map((s) => ({
             ...s,
             scheduledTime:
                 s.scheduledTime /*.tz("Europe/Rome")*/
@@ -302,7 +302,7 @@ let lastPosition: Position;
 
 const io = new Server(server);
 
-io.on('connection', socket => {
+io.on('connection', (socket) => {
     logger.debug(`Connesso al socket ${socket.id}`);
 
     if (lastPosition) socket.emit('position', lastPosition);
