@@ -626,11 +626,10 @@ class Tper {
         Tper.gtfsDatabase.clearAllTables();
 
         for (const key in files) {
-            logger.info(
-                `Parsing TPER GTFS file ${files[key as keyof typeof files]}`
-            );
-
             const file = files[key as keyof typeof files];
+
+            logger.info(`Parsing TPER GTFS file ${file}`);
+
             const content = await zip.file(file)?.async('string');
             if (!content) {
                 logger.error(`No content in TPER GTFS parse for file ${file}`);

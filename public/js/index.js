@@ -302,6 +302,11 @@ function addCorseToBusCard(data, cardNum = 1, agency = 'seta') {
             ? 'block'
             : 'none';
 
+        // check if current hour is 23 and arrival hour is 00, if so add 1 day to current date
+        if (new Date().getHours() === 23 && dataArrivo.getHours() === 0) {
+            dataArrivo.setDate(dataArrivo.getDate() + 1);
+        }
+
         const mins = dateFns.differenceInMinutes(
             dataArrivo,
             _parseHHMM(_formattaData(new Date(), false))
