@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult } from 'fuse.js';
 import type { Stop as GTFSStop, Trip as GTFSTrip } from 'gtfs-types';
 import JSZip from 'jszip';
 import moment, { type Moment } from 'moment-timezone';
@@ -186,7 +186,7 @@ class Tper {
                         const sIndex = s1.search(/[0-9]+/g);
                         if (sIndex === -1) {
                             logger.error('Invalid TPER s2 string format');
-                            return;
+                            return undefined;
                         }
                         busNum = s1.substring(sIndex)?.split(' ')[0];
                     }
@@ -423,7 +423,7 @@ class Tper {
 
     public async cercaFermatePerNome(
         nome: string
-    ): Promise<Fuse.FuseResult<TperStop>[]> {
+    ): Promise<FuseResult<TperStop>[]> {
         if (Tper._isCacheOutdated()) {
             const res = await Tper._cacheStops();
             if (!res) {

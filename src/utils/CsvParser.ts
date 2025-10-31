@@ -7,7 +7,7 @@ class CsvParser {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(records);
+                    resolve(records as T);
                 }
             });
         });

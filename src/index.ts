@@ -289,7 +289,7 @@ app.get('/fermatetrip', async (req, res) => {
     );
 });
 
-app.all('*', (_req, res) => {
+app.all('/*all', (_req, res) => {
     res.redirect('/');
 });
 

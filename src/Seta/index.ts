@@ -3,7 +3,7 @@ import { Agent } from 'node:https';
 import path from 'node:path';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult } from 'fuse.js';
 import moment, { type Moment } from 'moment';
 import type Corsa from '../interfaces/Corsa';
 import type News from '../interfaces/News';
@@ -139,7 +139,7 @@ class Seta {
 
     public async cercaFermatePerNome(
         nome: string
-    ): Promise<Fuse.FuseResult<Stop>[]> {
+    ): Promise<FuseResult<Stop>[]> {
         if (!Seta.fermate) {
             const res = await this._cacheStops();
             logger.info('Errore fuzzy search SETA return []');
