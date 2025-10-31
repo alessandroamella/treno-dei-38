@@ -25,8 +25,6 @@ class FerrovieInfo {
 
                 const feed = await rssParser.parseString(data);
 
-                console.log(feed.items);
-
                 const news = FerrovieInfo._mapToNews(feed.items);
 
                 FerrovieInfo.newsCache = news;
