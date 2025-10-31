@@ -3,6 +3,7 @@ import moment, { type Moment } from 'moment';
 import type News from '../interfaces/News';
 import type TrenoTabellone from '../interfaces/TrenoTabellone';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 import { rssParser, type TrenitaliaNewsItem } from './News';
 import type OutputFormattato from './OutputFormattato';
 import type StatoTreno from './StatoTreno';
@@ -48,17 +49,15 @@ class Trenitalia {
                 )
             ).data;
         } catch (err) {
-            if (axios.isAxiosError(err)) {
-                logger.warn(err?.response?.data || err);
-            }
-            logger.error(err);
+            printError(
+                `Error while loading train ${this.numeroTreno} data`,
+                err
+            );
             return false;
         }
 
         if (!data) {
-            logger.error(
-                `Errore nel caricamento dati treno ${this.numeroTreno}`
-            );
+            printError(`No data returned for train ${this.numeroTreno}`);
             return false;
         }
 
@@ -123,8 +122,10 @@ class Trenitalia {
             // SOLO REGIONALI
             // .filter(e => e.treno.toLowerCase().includes("reg"));
         } catch (err) {
-            logger.error('Errore nel caricamento tabellone');
-            logger.error(err);
+            printError(
+                `Error while loading departures for station ${codiceStazione}`,
+                err
+            );
             return null;
         }
     }
@@ -168,9 +169,7 @@ class Trenitalia {
                 .map((s) => s.trim().split('|'));
             return stazioni.map((s) => ({ nome: s[0], id: s[1] }));
         } catch (err) {
-            logger.error('Errore nella ricerca stazione');
-            logger.error(err);
-
+            printError(`Error while searching station for name ${nome}`, err);
             return null;
         }
     }
@@ -200,8 +199,7 @@ class Trenitalia {
 
                 return news;
             } catch (err) {
-                logger.error('Error while fetching Trenitalia news');
-                logger.error(err);
+                printError('Error while fetching Trenitalia news', err);
                 return null;
             }
         } else {

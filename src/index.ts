@@ -21,6 +21,7 @@ import { logger } from './utils/logger';
 import StopSearcher from './utils/StopSearcher';
 
 import './config';
+import FerrovieInfo from './FerrovieInfo';
 import {
     getRouteNameException,
     isRouteNameException,
@@ -203,7 +204,6 @@ app.get('/news', async (req, res) => {
         if (!agency || (isNewsType(agency) && agency === 'seta')) {
             const _s = await s.getNews();
             if (_s) news.push(..._s);
-            else throw new Error('SETA news null');
         }
         if (!agency || (isNewsType(agency) && agency === 'tper')) {
             const _t = await t.getNews();
@@ -213,10 +213,10 @@ app.get('/news', async (req, res) => {
             const _tt = await Trenitalia.getNews();
             if (_tt) news.push(..._tt);
         }
-        // if (!agency || (isNewsType(agency) && agency === "ferrovie.info")) {
-        //     const _f = await FerrovieInfo.getNews();
-        //     if (_f) news.push(..._f);
-        // }
+        if (!agency || (isNewsType(agency) && agency === 'ferrovie.info')) {
+            const _f = await FerrovieInfo.getNews();
+            if (_f) news.push(..._f);
+        }
         if (!agency || (isNewsType(agency) && agency === 'sancesario')) {
             const _sc = await SanCesario.getNews();
             if (_sc) news.push(..._sc);

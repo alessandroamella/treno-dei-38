@@ -2,6 +2,7 @@ import axios from 'axios';
 import moment, { type Moment } from 'moment';
 import type News from '../interfaces/News';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 import { type FerrovieNewsItem, rssParser } from './News';
 
 class FerrovieInfo {
@@ -34,8 +35,7 @@ class FerrovieInfo {
 
                 return news;
             } catch (err) {
-                logger.error('Error while reading FerrovieInfo news');
-                logger.error(err);
+                printError('Error while fetching FerrovieInfo news', err);
                 return null;
             }
         } else {

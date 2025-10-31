@@ -8,6 +8,7 @@ import moment, { type Moment } from 'moment';
 import type Corsa from '../interfaces/Corsa';
 import type News from '../interfaces/News';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 import type RawData from './RawData';
 import type RawError from './RawError';
 import { isRawError } from './RawError';
@@ -37,11 +38,9 @@ class Seta {
                     return [];
                 }
 
-                logger.warn('SETA request Axios error');
-                logger.warn(err?.response?.data || err);
+                printError('SETA request Axios error', err);
             } else {
-                logger.error('SETA request error');
-                logger.error(err);
+                printError('SETA request error', err);
             }
             return null;
         }
@@ -121,8 +120,7 @@ class Seta {
             Seta.fermate = obj;
             return true;
         } catch (err) {
-            logger.error('Error while reading stops');
-            logger.error(err);
+            printError('Error while reading stops', err);
             return false;
         }
     }
@@ -215,8 +213,7 @@ class Seta {
 
                 return news;
             } catch (err) {
-                logger.error('Error while fetching SETA news');
-                logger.error(err);
+                printError('Error while fetching SETA news', err);
                 return null;
             }
         } else {

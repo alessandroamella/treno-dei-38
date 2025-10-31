@@ -2,6 +2,7 @@ import axios from 'axios';
 import moment, { type Moment } from 'moment';
 import type News from '../interfaces/News';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 
 /**
  * Interface for the news items returned by the San Cesario (Plone) API.
@@ -118,10 +119,7 @@ class SanCesario {
 
             return allNews;
         } catch (err) {
-            logger.error(
-                'A critical error occurred while fetching SanCesario news',
-                err
-            );
+            printError('Error while fetching SanCesario news', err);
             return null;
         }
     }
