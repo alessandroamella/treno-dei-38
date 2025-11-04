@@ -17,7 +17,7 @@
         "@types/better-sqlite3": "^7.6.13",
         "@types/cron": "^2.4.3",
         "@types/express": "^5.0.5",
-        "@types/node": "^24.9.2",
+        "@types/node": "^24.10.0",
         "@types/xml2js": "^0.4.14",
         "gtfs-types": "^5.1.0",
         "nodemon": "^3.1.10",

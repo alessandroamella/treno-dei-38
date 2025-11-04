@@ -573,8 +573,8 @@ class Tper {
             const currentVersion = Tper.gtfsDatabase.getGtfsVersion();
 
             if (currentVersion === latestVersionStr) {
-                logger.info(
-                    `GTFS data is already up to date (version: ${currentVersion}). Skipping download.`
+                logger.debug(
+                    `GTFS data is already up to date (version: ${currentVersion}). Skipping download`
                 );
                 return null;
             }
