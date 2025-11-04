@@ -680,14 +680,15 @@ class Tper {
             getRouteNameException(realTimeData.linea) || realTimeData.linea;
 
         // Use SQLite to find trips for the specific route
-        const routeIdVariants = [routeId, realTimeData.linea];
+        const routeIdVariants = new Set([routeId, realTimeData.linea]);
 
         if (realTimeData.destinazione) {
-            routeIdVariants.push(routeId + realTimeData.destinazione);
+            routeIdVariants.add(routeId + realTimeData.destinazione);
         }
 
-        const gtfsTrips =
-            Tper.gtfsDatabase.findTripsByRouteIds(routeIdVariants);
+        const gtfsTrips = Tper.gtfsDatabase.findTripsByRouteIds(
+            Array.from(routeIdVariants)
+        );
 
         // Use SQLite to find stop times for the specific stop
         const stopTimes = Tper.gtfsDatabase.findStopTimesForStop(stopId);
@@ -696,7 +697,7 @@ class Tper {
             logger.warn(
                 `No GTFS data in findClosestGTFSTrip for trip ${
                     realTimeData.linea
-                } (${routeId})`
+                } (routeId ${routeId} - tried to search with variants "${Array.from(routeIdVariants).join('", "')}") and stop ${stopId}`
             );
 
             return null;
@@ -783,9 +784,9 @@ class Tper {
             logger.debug(
                 `TPER trip ${tripData.linea} at ${
                     tripData.arrivoTempoReale || tripData.arrivoProgrammato
-                } has destination "${tripData.destinazione}" and arrival time ${gtfsArrival?.format(
-                    'HH:mm'
-                )}`
+                } has destination "${tripData.destinazione ?? '--none--'}" and arrival time ${
+                    gtfsArrival?.format('HH:mm') ?? '--none--'
+                }`
             );
 
             return tripData;
