@@ -1,4 +1,4 @@
-import type Fuse from 'fuse.js';
+import type { FuseResult } from 'fuse.js';
 import type { AgencyType, CombinedStop } from '../interfaces/AgencyType';
 import type Seta from '../Seta';
 import type Stop from '../Seta/Stop';
@@ -48,11 +48,11 @@ export default class StopSearcher {
     }: FindByNameArgs): Promise<SearchedStop[]> {
         const _s = await this.s.cercaFermatePerNome(q);
         const _t = await this.t.cercaFermatePerNome(q);
-        let stops: Fuse.FuseResult<StopResult>[] = [
-            ...(<Fuse.FuseResult<Stop & { agency: AgencyType }>[]>(
+        let stops: FuseResult<StopResult>[] = [
+            ...(<FuseResult<Stop & { agency: AgencyType }>[]>(
                 _s.map((e) => ({ ...e, item: { ...e.item, agency: 'seta' } }))
             )),
-            ...(<Fuse.FuseResult<TperStop & { agency: AgencyType }>[]>(
+            ...(<FuseResult<TperStop & { agency: AgencyType }>[]>(
                 _t.map((e) => ({ ...e, item: { ...e.item, agency: 'tper' } }))
             )),
         ];

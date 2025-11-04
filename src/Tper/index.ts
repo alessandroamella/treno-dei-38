@@ -1,5 +1,5 @@
 import axios, { type AxiosResponse } from 'axios';
-import Fuse from 'fuse.js';
+import Fuse, { type FuseResult } from 'fuse.js';
 import type { Stop as GTFSStop, Trip as GTFSTrip } from 'gtfs-types';
 import JSZip from 'jszip';
 import moment, { type Moment } from 'moment-timezone';
@@ -11,6 +11,7 @@ import CsvParser from '../utils/CsvParser';
 import { fetchUrlWithCurl } from '../utils/curlFetch';
 import GTFSDatabase from '../utils/GTFSDatabase';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 import { rssParser, type TperNewsItem } from './News';
 import { getRouteNameException } from './RouteNameExceptions';
 
@@ -128,18 +129,7 @@ class Tper {
                 }`
             );
         } catch (err) {
-            if (axios.isAxiosError(err)) {
-                logger.debug('TPER data axios error:');
-                logger.debug(err.response?.data || err.response || err.code);
-                // DEBUG - MAP ERROR!!
-
-                // data = err.response?.data || "Unknown error";
-            } else {
-                logger.error('TPER data unknown error:');
-                logger.error(err);
-
-                // data = "Unknown error";
-            }
+            printError('TPER request error', err);
             return {
                 err: { msg: 'Error while fetching stop', status: 500 },
             } as FnErr;
@@ -196,7 +186,7 @@ class Tper {
                         const sIndex = s1.search(/[0-9]+/g);
                         if (sIndex === -1) {
                             logger.error('Invalid TPER s2 string format');
-                            return;
+                            return undefined;
                         }
                         busNum = s1.substring(sIndex)?.split(' ')[0];
                     }
@@ -218,8 +208,7 @@ class Tper {
                 })
                 .filter((e) => !!e) as Corsa[];
         } catch (err) {
-            logger.error('Error while fetching TPER routes');
-            logger.error(err);
+            printError('Error while parsing TPER trips', err);
             return {
                 err: { msg: 'Error while loading data', status: 500 },
             };
@@ -401,8 +390,7 @@ class Tper {
             Tper.isCaching = false;
             return true;
         } catch (err) {
-            logger.error('Error while caching TPER stops');
-            logger.error(err);
+            printError('Error while caching TPER stops', err);
             Tper.isCaching = false;
             return false;
         }
@@ -431,7 +419,7 @@ class Tper {
 
     public async cercaFermatePerNome(
         nome: string
-    ): Promise<Fuse.FuseResult<TperStop>[]> {
+    ): Promise<FuseResult<TperStop>[]> {
         if (Tper._isCacheOutdated()) {
             const res = await Tper._cacheStops();
             if (!res) {
@@ -504,8 +492,7 @@ class Tper {
 
                 return news;
             } catch (err) {
-                logger.error('Error while fetching TPER news');
-                logger.error(err);
+                printError('Error while fetching TPER news', err);
                 return null;
             }
         } else {
@@ -536,16 +523,14 @@ class Tper {
             const res = await axios.get(Tper.openDataVersionUrl);
             xml = res.data;
         } catch (err) {
-            logger.error('Error while fetching TPER open data version');
-            logger.error(err);
+            printError('Error while fetching TPER open data version', err);
             return null;
         }
 
         try {
             result = await parseStringPromise(xml);
         } catch (err) {
-            logger.error('Error while parsing TPER open data version');
-            logger.error(err);
+            printError('Error while parsing TPER open data version XML', err);
             return null;
         }
 

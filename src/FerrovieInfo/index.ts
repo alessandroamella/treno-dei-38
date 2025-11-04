@@ -2,11 +2,11 @@ import axios from 'axios';
 import moment, { type Moment } from 'moment';
 import type News from '../interfaces/News';
 import { logger } from '../utils/logger';
+import printError from '../utils/printError';
 import { type FerrovieNewsItem, rssParser } from './News';
 
 class FerrovieInfo {
-    private static newsUrl =
-        'https://www.ferrovie.info/index.php/it/?format=feed&type=rss';
+    private static newsUrl = 'https://www.ferrovie.info/?format=feed&type=rss';
     private static newsCache: News[] | null = null;
     private static newsCacheDate: Moment | null = null;
 
@@ -34,8 +34,7 @@ class FerrovieInfo {
 
                 return news;
             } catch (err) {
-                logger.error('Error while reading FerrovieInfo news');
-                logger.error(err);
+                printError('Error while fetching FerrovieInfo news', err);
                 return null;
             }
         } else {
@@ -51,7 +50,17 @@ class FerrovieInfo {
                 title: item.title!,
                 agency: 'ferrovie.info',
                 date: moment(item.pubDate),
-                type: item.category,
+                type:
+                    item.categories
+                        .filter(
+                            (c) =>
+                                ![
+                                    'ROOT',
+                                    'In evidenza',
+                                    'Treni reali',
+                                ].includes(c)
+                        )
+                        .join(', ') || 'FerrovieInfo',
                 url: item.link,
             }));
 
