@@ -366,8 +366,6 @@ class Tper {
                 .NewDataSet[0].Table) {
                 if (!(stop.codice_fermata[0] in stops)) {
                     stops[stop.codice_fermata[0]] = {
-                        coordX: stop.coordinata_x[0],
-                        coordY: stop.coordinata_y[0],
                         stopName: stop.denominazione[0],
                         routes: [stop.codice_linea][0],
                     };
@@ -390,8 +388,6 @@ class Tper {
                     ({
                         stopId: e[0],
                         stopName: e[1].stopName,
-                        coordX: e[1].coordX,
-                        coordY: e[1].coordY,
                         routes: e[1].routes,
                     }) as TperStop
             );

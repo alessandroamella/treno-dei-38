@@ -1,3 +1,6 @@
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { cwd } from 'node:process';
 import axios from 'axios';
 import moment, { type Moment } from 'moment';
 import type News from '../interfaces/News';
@@ -62,6 +65,15 @@ class Trenitalia {
             return false;
         }
 
+        writeFileSync(
+            join(
+                cwd(),
+                'viaggiatreno-debug-output',
+                'viaggiatreno-dati-treno.txt'
+            ),
+            data
+        );
+
         const risultati = (data as string).trim().split('\n');
         const mapped = risultati
             .map((r) => r.split('|')[1].split('-').slice(1))
@@ -102,6 +114,15 @@ class Trenitalia {
             return null;
         }
 
+        writeFileSync(
+            join(
+                cwd(),
+                'viaggiatreno-debug-output',
+                'viaggiatreno-info-viaggio.json'
+            ),
+            JSON.stringify(data, null, 2)
+        );
+
         return data;
     }
 
@@ -111,6 +132,20 @@ class Trenitalia {
         try {
             const { data } = await axios.get(
                 `http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/partenze/${codiceStazione}/${new Date()}`
+            );
+
+            if (!Array.isArray(data)) {
+                logger.error('Errore nel caricamento tabellone');
+                return null;
+            }
+
+            writeFileSync(
+                join(
+                    cwd(),
+                    'viaggiatreno-debug-output',
+                    'viaggiatreno-tabellone.json'
+                ),
+                JSON.stringify(data, null, 2)
             );
 
             return (data as StatoTreno[])
@@ -160,6 +195,18 @@ class Trenitalia {
             const { data } = await axios.get(
                 'http://www.viaggiatreno.it/infomobilita/resteasy/viaggiatreno/autocompletaStazione/' +
                     nome
+            );
+
+            if (!data) return null;
+
+            writeFileSync(
+                join(
+                    cwd(),
+                    'viaggiatreno-debug-output',
+                    'viaggiatreno-stazioni.txt'
+                ),
+                data,
+                'utf-8'
             );
 
             const stazioni = (data as string)

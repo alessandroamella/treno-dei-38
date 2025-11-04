@@ -417,8 +417,6 @@ async function bus(cardNum, fermata, data = null, nomeFermata = null) {
  * @typedef Fermata
  * @property {string} stopId
  * @property {string} stopName
- * @property {number} coordX
- * @property {number} coordY
  * @property {string} platform
  */
 

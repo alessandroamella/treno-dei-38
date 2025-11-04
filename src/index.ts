@@ -203,7 +203,7 @@ app.get('/news', async (req, res) => {
         if (!agency || (isNewsType(agency) && agency === 'seta')) {
             const _s = await s.getNews();
             if (_s) news.push(..._s);
-            else throw new Error('SETA news null');
+            // else throw new Error('SETA news null');
         }
         if (!agency || (isNewsType(agency) && agency === 'tper')) {
             const _t = await t.getNews();

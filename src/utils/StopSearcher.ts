@@ -25,7 +25,6 @@ interface FindMultipleByIdsArgs {
 
 type StopResult = CombinedStop & { agency: AgencyType };
 
-// type SearchedStops = Omit<StopResult, "stopId" | "coordX" | "coordY" | "platform"> & { stopIds: string[] };
 interface SearchedStop {
     stopName: string;
     // agency: AgencyType;
