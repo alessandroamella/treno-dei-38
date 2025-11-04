@@ -461,8 +461,9 @@ const autoCompleteConfig = [
             name: 'nome',
         },
 
-        minLength: 4,
+        minLength: 2,
         maxResults: 10,
+        debounceMS: 300
     },
     {
         name: 'Cerca fermata',
@@ -473,8 +474,9 @@ const autoCompleteConfig = [
             id: 'id',
             name: 'nome',
         },
-        minLength: 4,
+        minLength: 2,
         maxResults: 10,
+        debounceMS: 300
     },
 ];
 
