@@ -549,7 +549,15 @@ async function fermate(fermata) {
             )
             .join('')}
 
-                <div class="d-flex mt-2" style="justify-content: center">
+                <div class="d-flex mt-2" style="justify-content: center; gap: 0.5rem;">
+                <button
+                    onclick="
+                        document.querySelectorAll('.fermata-input').forEach(e => e.checked = true);
+                    "
+                    type="button"
+                    class="btn btn-secondary">
+                        Seleziona tutto
+                </button>
                 <button
                     onclick="
                         document.getElementById('fermata-bus-1').value = [...document.querySelectorAll('.fermata-input:checked')].map(e => e.value.split(',')[1]).join(',');
